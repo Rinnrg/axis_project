@@ -14,6 +14,7 @@ import {
   X,
   Loader2,
   Trash2,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 export default function RekapPage() {
@@ -90,18 +91,76 @@ export default function RekapPage() {
     alpha: filteredAttendance.filter((a) => a.status === 'alpha').length,
   };
 
-  // Handle Excel export placeholder
+  // ── Excel Export ──────────────────────────────────────────────────────────
+  const buildExcelRows = (records: any[]) => {
+    return records.map((item, idx) => ({
+      'No': idx + 1,
+      'Nama Karyawan': item.employeeName,
+      'Jabatan': item.employee?.position || item.position || '-',
+      'Departemen': item.employee?.department || item.department || '-',
+      'Tanggal': new Date(item.date).toLocaleDateString('id-ID', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC'
+      }),
+      'Jam Masuk': item.checkInTime || '-',
+      'Jam Pulang': item.checkOutTime || '-',
+      'Status': item.permissionType
+        ? item.permissionType
+        : item.status.charAt(0).toUpperCase() + item.status.slice(1),
+      'Keterangan': item.permissionReason || item.notes || '-',
+    }))
+  }
+
+  const downloadExcel = async (records: any[], filename: string) => {
+    try {
+      const XLSX = await import('xlsx')
+      const rows = buildExcelRows(records)
+      const ws = XLSX.utils.json_to_sheet(rows)
+
+      // Set column widths
+      ws['!cols'] = [
+        { wch: 5 },  // No
+        { wch: 25 }, // Nama
+        { wch: 18 }, // Jabatan
+        { wch: 18 }, // Departemen
+        { wch: 28 }, // Tanggal
+        { wch: 12 }, // Jam Masuk
+        { wch: 12 }, // Jam Pulang
+        { wch: 14 }, // Status
+        { wch: 35 }, // Keterangan
+      ]
+
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, ws, 'Rekap Presensi')
+      XLSX.writeFile(wb, filename)
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Export Berhasil!',
+        text: `File ${filename} telah berhasil diunduh.`,
+        timer: 2000,
+        showConfirmButton: false,
+        customClass: { popup: 'rounded-2xl' }
+      })
+    } catch (err: any) {
+      console.error('Export error:', err)
+      Swal.fire({
+        icon: 'error',
+        title: 'Export Gagal',
+        text: 'Pastikan library xlsx sudah terinstall (npm install xlsx).',
+        confirmButtonColor: '#4f46e5',
+        customClass: { popup: 'rounded-2xl' }
+      })
+    }
+  }
+
   const handleExportMonth = () => {
-    console.log('Export data untuk bulan:', month);
-    alert('Fitur export bulan ini akan diimplementasikan dengan library xlsx');
-  };
+    const label = month === 'all' ? 'semua' : month
+    downloadExcel(flatRecords, `Rekap_Presensi_${label}.xlsx`)
+  }
 
   const handleExportAll = () => {
-    console.log('Export semua data');
-    alert(
-      'Fitur export semua data akan diimplementasikan dengan library xlsx'
-    );
-  };
+    downloadExcel(flatRecords, `Rekap_Presensi_Semua.xlsx`)
+  }
 
   // Handle previewing photo by fetching it on-demand
   const handlePreviewPhoto = async (id: string, type: 'checkin' | 'checkout' | 'attachment', title: string) => {
@@ -352,16 +411,24 @@ export default function RekapPage() {
 
             {/* Export Buttons */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-slate-700">Export</label>
+              <label className="block text-sm font-medium text-slate-700">Export Excel</label>
               <div className="flex gap-2">
-                <Button onClick={handleExportMonth} variant="outline" size="sm" className="flex-1">
-                  <Download className="w-4 h-4 mr-1" />
+                <button
+                  onClick={handleExportMonth}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm"
+                  title={`Export data bulan ${month === 'all' ? 'yang dipilih' : month} ke Excel`}
+                >
+                  <FileSpreadsheet className="w-4 h-4" />
                   Bulan Ini
-                </Button>
-                <Button onClick={handleExportAll} variant="outline" size="sm" className="flex-1">
-                  <Download className="w-4 h-4 mr-1" />
+                </button>
+                <button
+                  onClick={handleExportAll}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 rounded-lg text-sm font-semibold transition-colors"
+                  title="Export semua data yang tampil ke Excel"
+                >
+                  <Download className="w-4 h-4" />
                   Semua
-                </Button>
+                </button>
               </div>
             </div>
           </div>
