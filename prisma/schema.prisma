@@ -1,0 +1,134 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================================
+// USER / EMPLOYEE
+// ============================================================
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  emailVerified DateTime?
+  password      String?   // nullable — Google users don't have password
+  phone         String?
+  position      String?
+  department    String?
+  role          Role      @default(EMPLOYEE)
+  joinDate      DateTime  @default(now())
+  photo         String?   // used as `image` by NextAuth
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts    Account[]
+  attendances Attendance[]
+  permissions Permission[]
+
+  @@map("users")
+}
+
+enum Role {
+  EMPLOYEE
+  ADMIN
+}
+
+// ============================================================
+// NEXTAUTH — Account (OAuth provider links)
+// ============================================================
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+// ============================================================
+// NEXTAUTH — VerificationToken (email magic links)
+// ============================================================
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ============================================================
+// ATTENDANCE
+// ============================================================
+model Attendance {
+  id           String           @id @default(cuid())
+  userId       String
+  date         DateTime         @db.Date
+  checkInTime  DateTime?        @db.Time
+  checkOutTime DateTime?        @db.Time
+  status       AttendanceStatus @default(HADIR)
+  notes        String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@map("attendances")
+}
+
+enum AttendanceStatus {
+  HADIR
+  TELAT
+  IZIN
+  ALPHA
+}
+
+// ============================================================
+// PERMISSION (Izin / Cuti / Sakit)
+// ============================================================
+model Permission {
+  id        String           @id @default(cuid())
+  userId    String
+  type      PermissionType
+  startDate DateTime         @db.Date
+  endDate   DateTime         @db.Date
+  reason    String
+  status    PermissionStatus @default(PENDING)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("permissions")
+}
+
+enum PermissionType {
+  IZIN
+  CUTI
+  SAKIT
+}
+
+enum PermissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}

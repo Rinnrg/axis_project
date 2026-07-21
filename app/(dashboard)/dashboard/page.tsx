@@ -1,43 +1,86 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { ClockWidget } from '@/components/clock-widget';
 import { AttendanceCamera } from '@/components/attendance-camera';
-import { mockAttendance } from '@/lib/mock-data';
 import {
-  CheckCircle,
-  Clock,
-  AlertCircle,
-  FileText,
-  Calendar,
-  LogIn,
-  LogOut,
+  CheckCircle, Clock, AlertCircle, FileText, Calendar, LogIn, LogOut,
 } from 'lucide-react';
 
+interface TodayAttendance {
+  id?: string;
+  checkInTime: string | null;
+  checkOutTime: string | null;
+  status: string;
+}
+
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
 
+  const [cameraOpen, setCameraOpen]     = useState<'checkin' | 'checkout' | null>(null);
+  const [todayAtt,   setTodayAtt]       = useState<TodayAttendance | null>(null);
+  const [attLoading, setAttLoading]     = useState(true);
+
+  // ── Redirect admin ────────────────────────────────────────────────────────
   useEffect(() => {
-    if (user?.role === 'admin') router.push('/admin/rekap');
-  }, [user, router]);
+    if (!authLoading && user?.role === 'admin') router.push('/admin/rekap');
+  }, [user, authLoading, router]);
 
-  const [cameraOpen, setCameraOpen] = useState<'checkin' | 'checkout' | null>(null);
-  const [, setTodayAttendance] = useState<Record<string, string> | null>(null);
+  // ── Fetch today's attendance from API ─────────────────────────────────────
+  const fetchToday = useCallback(async () => {
+    if (!user?.id) return;
+    setAttLoading(true);
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const res = await fetch(`/api/attendance?userId=${user.id}&date=${today}`);
+      const data = await res.json();
+      const records: TodayAttendance[] = data.attendances ?? [];
+      setTodayAtt(records[0] ?? null);
+    } catch (err) {
+      console.error('Failed to fetch attendance', err);
+    } finally {
+      setAttLoading(false);
+    }
+  }, [user?.id]);
 
-  const today = new Date().toISOString().split('T')[0];
-  const employeeAttendance = mockAttendance.find(
-    a => a.employeeId === user?.id && a.date === today
-  );
+  useEffect(() => { fetchToday(); }, [fetchToday]);
 
+  // ── After successful camera capture → call API ────────────────────────────
+  const handleAttendanceSuccess = async (type: 'checkin' | 'checkout', timestamp: string) => {
+    if (!user?.id) return;
+    try {
+      await fetch('/api/attendance', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ userId: user.id, type }),
+      });
+    } catch (err) {
+      console.error('Failed to save attendance', err);
+    }
+
+    // Optimistically update UI with the timestamp shown on camera success screen
+    setTodayAtt(prev => ({
+      checkInTime:  prev?.checkInTime  ?? null,
+      checkOutTime: prev?.checkOutTime ?? null,
+      status:       prev?.status ?? 'hadir',
+      ...prev,
+      [type === 'checkin' ? 'checkInTime' : 'checkOutTime']: timestamp,
+    }));
+
+    // Re-fetch to sync with DB
+    setTimeout(fetchToday, 1500);
+  };
+
+  // ── Status helpers ────────────────────────────────────────────────────────
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'hadir':  return <CheckCircle className="w-5 h-5 text-emerald-500" />;
-      case 'telat':  return <AlertCircle className="w-5 h-5 text-amber-500" />;
-      case 'izin':   return <FileText    className="w-5 h-5 text-blue-500" />;
-      default:       return <Clock       className="w-5 h-5 text-slate-400" />;
+      case 'hadir': return <CheckCircle className="w-5 h-5 text-emerald-500" />;
+      case 'telat': return <AlertCircle className="w-5 h-5 text-amber-500" />;
+      case 'izin':  return <FileText    className="w-5 h-5 text-blue-500" />;
+      default:      return <Clock       className="w-5 h-5 text-slate-400" />;
     }
   };
 
@@ -50,13 +93,13 @@ export default function DashboardPage() {
     }
   };
 
+  if (authLoading) return null;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 sm:p-6 md:p-8">
       <div className="max-w-7xl mx-auto space-y-5 sm:space-y-6 md:space-y-8">
 
-        {/* ------------------------------------------------------------------ */}
-        {/* Welcome + Clock                                                     */}
-        {/* ------------------------------------------------------------------ */}
+        {/* Welcome + Clock */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 leading-tight">
@@ -66,42 +109,40 @@ export default function DashboardPage() {
               {user?.position} • {user?.department}
             </p>
           </div>
-          {/* Clock — hidden on tiny screens, shown sm+ */}
           <div className="hidden sm:block bg-white rounded-2xl shadow-lg p-5 md:p-6 shrink-0">
             <ClockWidget />
           </div>
         </div>
 
-        {/* ------------------------------------------------------------------ */}
-        {/* Today Status Banner                                                 */}
-        {/* ------------------------------------------------------------------ */}
-        {employeeAttendance && (
-          <div className={`rounded-xl sm:rounded-2xl border-2 p-4 sm:p-5 ${getStatusColor(employeeAttendance.status)}`}>
+        {/* Status Banner */}
+        {!attLoading && todayAtt && (
+          <div className={`rounded-xl sm:rounded-2xl border-2 p-4 sm:p-5 ${getStatusColor(todayAtt.status)}`}>
             <div className="flex items-center gap-2 mb-1.5">
-              {getStatusIcon(employeeAttendance.status)}
+              {getStatusIcon(todayAtt.status)}
               <h3 className="font-semibold text-sm sm:text-base">Status Hari Ini</h3>
             </div>
             <p className="text-sm">
-              {employeeAttendance.status === 'hadir'
-                ? `Masuk: ${employeeAttendance.checkInTime} | Pulang: ${employeeAttendance.checkOutTime || 'Belum'}`
-                : employeeAttendance.status === 'telat'
-                  ? `Masuk Telat: ${employeeAttendance.checkInTime}`
-                  : employeeAttendance.status === 'izin'
-                    ? `Alasan: ${employeeAttendance.notes}`
-                    : 'Belum ada presensi'}
+              {todayAtt.status === 'hadir' || todayAtt.status === 'telat'
+                ? `Masuk: ${todayAtt.checkInTime ?? '—'} | Pulang: ${todayAtt.checkOutTime ?? 'Belum'}`
+                : todayAtt.status === 'izin'
+                  ? 'Izin hari ini'
+                  : 'Belum ada presensi'}
             </p>
           </div>
         )}
 
-        {/* ------------------------------------------------------------------ */}
-        {/* Main Action Cards — stacked on mobile, side-by-side on md+         */}
-        {/* ------------------------------------------------------------------ */}
+        {/* Loading skeleton */}
+        {attLoading && (
+          <div className="rounded-xl border-2 border-slate-200 bg-slate-50 p-4 sm:p-5 animate-pulse h-16" />
+        )}
+
+        {/* Action Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
 
           {/* CHECK IN */}
           <button
             onClick={() => setCameraOpen('checkin')}
-            disabled={!!employeeAttendance?.checkInTime}
+            disabled={!!todayAtt?.checkInTime || attLoading}
             className="group relative overflow-hidden rounded-xl sm:rounded-2xl shadow-md hover:shadow-xl
                        transition-all duration-300 text-left w-full
                        disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] touch-manipulation"
@@ -116,14 +157,14 @@ export default function DashboardPage() {
                 <div>
                   <h2 className="text-xl sm:text-2xl md:text-3xl font-bold leading-tight">Presensi Masuk</h2>
                   <p className="text-indigo-200 text-xs sm:text-sm">
-                    {employeeAttendance?.checkInTime
-                      ? `✓ Sudah masuk ${employeeAttendance.checkInTime}`
+                    {todayAtt?.checkInTime
+                      ? `✓ Sudah masuk ${todayAtt.checkInTime}`
                       : 'Klik untuk absen masuk'}
                   </p>
                 </div>
               </div>
               <span className="inline-block px-3 py-1.5 sm:px-4 sm:py-2 bg-white/20 rounded-lg text-xs sm:text-sm font-medium backdrop-blur">
-                {employeeAttendance?.checkInTime ? '✓ Selesai' : 'Mulai Sekarang →'}
+                {todayAtt?.checkInTime ? '✓ Selesai' : 'Mulai Sekarang →'}
               </span>
             </div>
           </button>
@@ -131,7 +172,7 @@ export default function DashboardPage() {
           {/* CHECK OUT */}
           <button
             onClick={() => setCameraOpen('checkout')}
-            disabled={!employeeAttendance?.checkInTime || !!employeeAttendance?.checkOutTime}
+            disabled={!todayAtt?.checkInTime || !!todayAtt?.checkOutTime || attLoading}
             className="group relative overflow-hidden rounded-xl sm:rounded-2xl shadow-md hover:shadow-xl
                        transition-all duration-300 text-left w-full
                        disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] touch-manipulation"
@@ -146,24 +187,22 @@ export default function DashboardPage() {
                 <div>
                   <h2 className="text-xl sm:text-2xl md:text-3xl font-bold leading-tight">Presensi Pulang</h2>
                   <p className="text-emerald-200 text-xs sm:text-sm">
-                    {employeeAttendance?.checkOutTime
-                      ? `✓ Sudah pulang ${employeeAttendance.checkOutTime}`
-                      : employeeAttendance?.checkInTime
+                    {todayAtt?.checkOutTime
+                      ? `✓ Sudah pulang ${todayAtt.checkOutTime}`
+                      : todayAtt?.checkInTime
                         ? 'Klik untuk absen pulang'
                         : 'Lakukan check-in terlebih dahulu'}
                   </p>
                 </div>
               </div>
               <span className="inline-block px-3 py-1.5 sm:px-4 sm:py-2 bg-white/20 rounded-lg text-xs sm:text-sm font-medium backdrop-blur">
-                {employeeAttendance?.checkOutTime ? '✓ Selesai' : 'Mulai Sekarang →'}
+                {todayAtt?.checkOutTime ? '✓ Selesai' : 'Mulai Sekarang →'}
               </span>
             </div>
           </button>
         </div>
 
-        {/* ------------------------------------------------------------------ */}
-        {/* Secondary nav cards                                                 */}
-        {/* ------------------------------------------------------------------ */}
+        {/* Secondary Nav */}
         <div className="grid grid-cols-2 gap-3 sm:gap-4">
           <a
             href="/riwayat"
@@ -201,11 +240,10 @@ export default function DashboardPage() {
         <AttendanceCamera
           type={cameraOpen}
           onClose={() => setCameraOpen(null)}
-          onSuccess={(ts) => {
-            setTodayAttendance(prev => ({
-              ...prev,
-              [cameraOpen === 'checkin' ? 'checkInTime' : 'checkOutTime']: ts,
-            }));
+          onSuccess={(timestamp) => {
+            const type = cameraOpen;
+            setCameraOpen(null);
+            handleAttendanceSuccess(type, timestamp);
           }}
         />
       )}

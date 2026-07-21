@@ -1,55 +1,85 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { mockPermissions } from '@/lib/mock-data';
 import { Button } from '@/components/ui/button';
-import { FileText, Plus, AlertCircle, CheckCircle, Clock, X } from 'lucide-react';
+import { FileText, Plus, AlertCircle, CheckCircle, Clock, X, RefreshCw } from 'lucide-react';
+
+interface PermissionRecord {
+  id: string;
+  type: 'izin' | 'cuti' | 'sakit';
+  startDate: string;
+  endDate: string;
+  reason: string;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
+}
 
 export default function IzinPage() {
   const { user } = useAuth();
-  const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({
+  const [showForm,  setShowForm]  = useState(false);
+  const [records,   setRecords]   = useState<PermissionRecord[]>([]);
+  const [loading,   setLoading]   = useState(true);
+  const [submitting,setSubmitting]= useState(false);
+  const [formData,  setFormData]  = useState({
     type: 'izin' as 'izin' | 'cuti' | 'sakit',
     startDate: '',
     endDate: '',
     reason: '',
   });
 
-  const userPermissions = mockPermissions.filter(p => p.employeeId === user?.id);
+  const fetchPermissions = useCallback(async () => {
+    if (!user?.id) return;
+    setLoading(true);
+    try {
+      const res  = await fetch(`/api/permissions?userId=${user.id}`);
+      const data = await res.json();
+      setRecords(data.permissions ?? []);
+    } catch (err) {
+      console.error('Failed to fetch permissions', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => { fetchPermissions(); }, [fetchPermissions]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Submit:', formData);
-    setFormData({ type: 'izin', startDate: '', endDate: '', reason: '' });
-    setShowForm(false);
+    if (!user?.id) return;
+    setSubmitting(true);
+    try {
+      await fetch('/api/permissions', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ userId: user.id, ...formData }),
+      });
+      setFormData({ type: 'izin', startDate: '', endDate: '', reason: '' });
+      setShowForm(false);
+      fetchPermissions();
+    } catch (err) {
+      console.error('Failed to submit permission', err);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
+  const getStatusIcon = (s: string) => {
+    switch (s) {
       case 'approved': return <CheckCircle className="w-4 h-4 text-emerald-500" />;
       case 'rejected': return <AlertCircle className="w-4 h-4 text-red-500" />;
       default:         return <Clock       className="w-4 h-4 text-amber-500" />;
     }
   };
 
-  const getStatusBadge = (status: string) => ({
+  const getStatusBadge = (s: string) => ({
     approved: 'bg-emerald-100 text-emerald-700 border border-emerald-200',
-    rejected: 'bg-red-100 text-red-700 border border-red-200',
-    pending:  'bg-amber-100 text-amber-700 border border-amber-200',
-  }[status] ?? 'bg-amber-100 text-amber-700 border border-amber-200');
+    rejected: 'bg-red-100    text-red-700    border border-red-200',
+    pending:  'bg-amber-100  text-amber-700  border border-amber-200',
+  }[s] ?? 'bg-amber-100 text-amber-700 border border-amber-200');
 
-  const getStatusLabel = (status: string) => ({
-    approved: 'Disetujui',
-    rejected: 'Ditolak',
-    pending:  'Menunggu',
-  }[status] ?? status);
-
-  const getTypeLabel = (type: string) => ({
-    izin: 'Izin',
-    cuti: 'Cuti',
-    sakit: 'Sakit',
-  }[type] ?? type);
+  const getStatusLabel  = (s: string) => ({ approved:'Disetujui', rejected:'Ditolak', pending:'Menunggu' }[s] ?? s);
+  const getTypeLabel    = (t: string) => ({ izin:'Izin', cuti:'Cuti', sakit:'Sakit' }[t] ?? t);
 
   const typeColors: Record<string, string> = {
     izin:  'border-indigo-500 bg-indigo-50 text-indigo-700',
@@ -67,18 +97,26 @@ export default function IzinPage() {
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Pengajuan Izin</h1>
             <p className="text-slate-500 mt-1 text-sm sm:text-base">Kelola pengajuan izin dan cuti Anda</p>
           </div>
-          {!showForm && (
-            <Button
-              onClick={() => setShowForm(true)}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white h-10 px-3 sm:px-4 text-sm shrink-0 touch-manipulation"
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={fetchPermissions}
+              className="p-2 text-slate-400 hover:text-slate-700 hover:bg-white rounded-lg transition-colors touch-manipulation"
             >
-              <Plus className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Ajukan Izin</span>
-            </Button>
-          )}
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+            {!showForm && (
+              <Button
+                onClick={() => setShowForm(true)}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white h-10 px-3 sm:px-4 text-sm touch-manipulation"
+              >
+                <Plus className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Ajukan Izin</span>
+              </Button>
+            )}
+          </div>
         </div>
 
-        {/* Form — slides in as a card */}
+        {/* Form */}
         {showForm && (
           <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 space-y-4 border border-indigo-100">
             <div className="flex items-center justify-between">
@@ -98,13 +136,10 @@ export default function IzinPage() {
                 <div className="grid grid-cols-3 gap-2 sm:gap-3">
                   {(['izin', 'cuti', 'sakit'] as const).map(t => (
                     <button
-                      key={t}
-                      type="button"
+                      key={t} type="button"
                       onClick={() => setFormData(p => ({ ...p, type: t }))}
                       className={`py-2.5 sm:py-3 rounded-lg border-2 text-sm font-medium transition-all touch-manipulation ${
-                        formData.type === t
-                          ? typeColors[t]
-                          : 'border-slate-200 text-slate-600 hover:border-slate-300'
+                        formData.type === t ? typeColors[t] : 'border-slate-200 text-slate-600 hover:border-slate-300'
                       }`}
                     >
                       {getTypeLabel(t)}
@@ -118,8 +153,7 @@ export default function IzinPage() {
                 <div className="space-y-1.5">
                   <label className="block text-xs sm:text-sm font-medium text-slate-700">Dari Tanggal</label>
                   <input
-                    type="date"
-                    value={formData.startDate}
+                    type="date" value={formData.startDate}
                     onChange={e => setFormData(p => ({ ...p, startDate: e.target.value }))}
                     className="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm
                                focus:outline-none focus:ring-2 focus:ring-indigo-500 touch-manipulation"
@@ -129,8 +163,7 @@ export default function IzinPage() {
                 <div className="space-y-1.5">
                   <label className="block text-xs sm:text-sm font-medium text-slate-700">Sampai Tanggal</label>
                   <input
-                    type="date"
-                    value={formData.endDate}
+                    type="date" value={formData.endDate}
                     onChange={e => setFormData(p => ({ ...p, endDate: e.target.value }))}
                     className="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm
                                focus:outline-none focus:ring-2 focus:ring-indigo-500 touch-manipulation"
@@ -153,18 +186,15 @@ export default function IzinPage() {
                 />
               </div>
 
-              {/* Actions */}
               <div className="flex gap-3 pt-1">
                 <Button
-                  type="submit"
+                  type="submit" disabled={submitting}
                   className="flex-1 sm:flex-none bg-indigo-600 hover:bg-indigo-700 text-white h-11 touch-manipulation"
                 >
-                  Kirim Pengajuan
+                  {submitting ? 'Mengirim...' : 'Kirim Pengajuan'}
                 </Button>
                 <Button
-                  type="button"
-                  onClick={() => setShowForm(false)}
-                  variant="outline"
+                  type="button" onClick={() => setShowForm(false)} variant="outline"
                   className="flex-1 sm:flex-none h-11 touch-manipulation"
                 >
                   Batal
@@ -178,14 +208,27 @@ export default function IzinPage() {
         <div className="space-y-3 sm:space-y-4">
           <h2 className="text-base sm:text-lg font-semibold text-slate-900">Riwayat Pengajuan</h2>
 
-          {userPermissions.length > 0 ? (
+          {loading ? (
             <div className="space-y-3">
-              {userPermissions.map(perm => (
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="bg-white rounded-xl p-4 sm:p-5 animate-pulse border border-slate-200">
+                  <div className="flex gap-3">
+                    <div className="w-9 h-9 bg-slate-200 rounded-lg" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 w-24 bg-slate-200 rounded" />
+                      <div className="h-3 w-40 bg-slate-100 rounded" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : records.length > 0 ? (
+            <div className="space-y-3">
+              {records.map(perm => (
                 <div
                   key={perm.id}
                   className="bg-white rounded-xl p-4 sm:p-5 border border-slate-200 hover:shadow-md transition-shadow"
                 >
-                  {/* Top row: type + status */}
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="flex items-start gap-3 flex-1 min-w-0">
                       <div className="w-9 h-9 bg-indigo-50 rounded-lg flex items-center justify-center shrink-0">
@@ -196,9 +239,9 @@ export default function IzinPage() {
                           {getTypeLabel(perm.type)}
                         </p>
                         <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                          {new Date(perm.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          {new Date(perm.startDate).toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' })}
                           {' — '}
-                          {new Date(perm.endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          {new Date(perm.endDate).toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' })}
                         </p>
                       </div>
                     </div>
@@ -208,16 +251,14 @@ export default function IzinPage() {
                     </span>
                   </div>
 
-                  {/* Reason */}
                   {perm.reason && (
                     <p className="text-xs sm:text-sm text-slate-600 bg-slate-50 rounded-lg px-3 py-2 line-clamp-2">
                       {perm.reason}
                     </p>
                   )}
 
-                  {/* Footer: submitted date */}
                   <p className="text-xs text-slate-400 mt-2">
-                    Diajukan: {new Date(perm.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    Diajukan: {new Date(perm.createdAt).toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric' })}
                   </p>
                 </div>
               ))}
