@@ -65,8 +65,9 @@ export function Topbar() {
 
   const menuItems = user?.role === 'admin'
     ? [
-        { label: 'Dashboard',      href: '/admin',       icon: LayoutDashboard },
-        { label: 'Rekap Presensi', href: '/admin/rekap', icon: ClipboardList },
+        { label: 'Dashboard',       href: '/admin',                 icon: LayoutDashboard },
+        { label: 'Management Role', href: '/admin/management-role', icon: UserCheck },
+        { label: 'Rekap Presensi',  href: '/admin/rekap',           icon: ClipboardList },
       ]
     : [
         { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },

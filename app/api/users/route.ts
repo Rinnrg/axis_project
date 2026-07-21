@@ -91,7 +91,7 @@ export async function PUT(req: NextRequest) {
       )
     }
 
-    const newRole = position.toLowerCase() === 'admin' ? 'ADMIN' : 'EMPLOYEE'
+    const newRole = (position.toLowerCase() === 'admin' || position.toLowerCase() === 'super admin') ? 'ADMIN' : 'EMPLOYEE'
 
     const user = await prisma.user.update({
       where: { id: userId },

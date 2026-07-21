@@ -78,10 +78,10 @@ function LoginForm() {
           />
           <div>
             <h1 className="text-3xl font-bold text-slate-900">
-              {isAdminLogin ? 'Admin CH Alam Juanda' : 'CH Alam Juanda'}
+              {isAdminLogin ? 'Super Admin CH Alam Juanda' : 'CH Alam Juanda'}
             </h1>
             <p className="text-slate-500 text-sm mt-1">
-              {isAdminLogin ? 'Portal Khusus Administrator' : 'Sistem Kehadiran Karyawan Modern'}
+              {isAdminLogin ? 'Portal Khusus Super Admin' : 'Sistem Kehadiran Karyawan Modern'}
             </p>
           </div>
         </div>
@@ -126,7 +126,7 @@ function LoginForm() {
             /* Admin Login View (Email/Password Only) */
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <label htmlFor="email" className="block text-sm font-medium text-slate-700">Email Admin</label>
+                <label htmlFor="email" className="block text-sm font-medium text-slate-700">Email Super Admin</label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
                   <input
@@ -159,7 +159,7 @@ function LoginForm() {
                            hover:from-indigo-700 hover:to-indigo-800 text-white py-3 rounded-xl
                            font-semibold transition-all h-12 touch-manipulation"
               >
-                {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Memproses...</> : 'Masuk sebagai Admin'}
+                {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Memproses...</> : 'Masuk sebagai Super Admin'}
               </Button>
             </form>
           )}

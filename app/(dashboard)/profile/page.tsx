@@ -75,7 +75,7 @@ export default function ProfilePage() {
             <div className="p-4 bg-slate-50 rounded-lg">
               <p className="text-sm text-slate-600 mb-1">Role</p>
               <p className="text-lg font-bold text-slate-900 capitalize">
-                {user?.role === 'admin' ? 'Administrator' : 'Karyawan'}
+                {user?.role === 'admin' ? 'Super Admin' : 'Karyawan'}
               </p>
             </div>
             <div className="p-4 bg-slate-50 rounded-lg">
