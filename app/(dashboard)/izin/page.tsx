@@ -13,6 +13,7 @@ interface PermissionRecord {
   reason: string;
   status: 'pending' | 'approved' | 'rejected';
   createdAt: string;
+  attachment?: string | null;
 }
 
 export default function IzinPage() {
@@ -21,12 +22,52 @@ export default function IzinPage() {
   const [records,   setRecords]   = useState<PermissionRecord[]>([]);
   const [loading,   setLoading]   = useState(true);
   const [submitting,setSubmitting]= useState(false);
+  const [attachment,setAttachment]  = useState<string | null>(null);
   const [formData,  setFormData]  = useState({
     type: 'izin' as 'izin' | 'cuti' | 'sakit',
     startDate: '',
     endDate: '',
     reason: '',
   });
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Ukuran file terlalu besar (maksimal 5MB)");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const maxDim = 800;
+        let width = img.width;
+        let height = img.height;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+
+        const webpDataUrl = canvas.toDataURL('image/webp', 0.8);
+        setAttachment(webpDataUrl);
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
 
   const fetchPermissions = useCallback(async () => {
     if (!user?.id) return;
@@ -52,9 +93,10 @@ export default function IzinPage() {
       await fetch('/api/permissions', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ userId: user.id, ...formData }),
+        body:    JSON.stringify({ userId: user.id, ...formData, attachment }),
       });
       setFormData({ type: 'izin', startDate: '', endDate: '', reason: '' });
+      setAttachment(null);
       setShowForm(false);
       fetchPermissions();
     } catch (err) {
@@ -186,6 +228,42 @@ export default function IzinPage() {
                 />
               </div>
 
+              {/* Attachment File Upload */}
+              <div className="space-y-1.5">
+                <label className="block text-xs sm:text-sm font-medium text-slate-700">
+                  Unggah Bukti Pendukung (Opsional, PDF/Foto)
+                </label>
+                <div className="flex flex-col gap-2">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="block w-full text-sm text-slate-500
+                              file:mr-4 file:py-2.5 file:px-4
+                              file:rounded-xl file:border-0
+                              file:text-xs file:font-semibold
+                              file:bg-indigo-50 file:text-indigo-700
+                              hover:file:bg-indigo-100 transition-all cursor-pointer"
+                  />
+                  {attachment && (
+                    <div className="mt-2 relative inline-block w-28 h-28 border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                      <img
+                        src={attachment}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setAttachment(null)}
+                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 shadow hover:bg-red-600 transition-colors"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div className="flex gap-3 pt-1">
                 <Button
                   type="submit" disabled={submitting}
@@ -255,6 +333,19 @@ export default function IzinPage() {
                     <p className="text-xs sm:text-sm text-slate-600 bg-slate-50 rounded-lg px-3 py-2 line-clamp-2">
                       {perm.reason}
                     </p>
+                  )}
+
+                  {perm.attachment && (
+                    <div className="mt-2.5 space-y-1">
+                      <p className="text-xs font-semibold text-slate-400">Bukti Lampiran:</p>
+                      <a href={perm.attachment} target="_blank" rel="noopener noreferrer" className="inline-block group">
+                        <img 
+                          src={perm.attachment} 
+                          alt="Bukti Lampiran" 
+                          className="h-16 w-auto max-w-48 object-cover rounded-lg border border-slate-200 shadow-sm group-hover:opacity-85 transition-opacity" 
+                        />
+                      </a>
+                    </div>
                   )}
 
                   <p className="text-xs text-slate-400 mt-2">

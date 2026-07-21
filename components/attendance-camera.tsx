@@ -18,7 +18,7 @@ declare global {
 interface AttendanceCameraProps {
   type: 'checkin' | 'checkout';
   onClose: () => void;
-  onSuccess: (timestamp: string) => void;
+  onSuccess: (timestamp: string, photo?: string) => void;
 }
 
 type FaceStatus = 'loading' | 'ready' | 'face_detected' | 'no_face' | 'error';
@@ -145,6 +145,10 @@ export function AttendanceCamera({ type, onClose, onSuccess }: AttendanceCameraP
       const ctx = canvas.getContext('2d');
       canvas.width  = video.videoWidth;
       canvas.height = video.videoHeight;
+      
+      // Mirror the captured image to match the video preview scale-x-[-1]
+      ctx?.translate(canvas.width, 0);
+      ctx?.scale(-1, 1);
       ctx?.drawImage(video, 0, 0);
 
       await new Promise(res => setTimeout(res, 600));
@@ -152,9 +156,13 @@ export function AttendanceCamera({ type, onClose, onSuccess }: AttendanceCameraP
       const timeString = new Date().toLocaleTimeString('id-ID', {
         hour: '2-digit', minute: '2-digit', second: '2-digit',
       });
+      
+      // Convert to WebP format with 0.8 quality
+      const photoDataUrl = canvas.toDataURL('image/webp', 0.8);
+
       setTimestamp(timeString);
       setCaptureSuccess(true);
-      setTimeout(() => { onSuccess(timeString); onClose(); }, 2200);
+      setTimeout(() => { onSuccess(timeString, photoDataUrl); onClose(); }, 2200);
     } catch {
       setErrorMsg('Gagal mengambil foto. Silakan coba lagi.');
     } finally {

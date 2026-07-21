@@ -49,13 +49,13 @@ export default function DashboardPage() {
   useEffect(() => { fetchToday(); }, [fetchToday]);
 
   // ── After successful camera capture → call API ────────────────────────────
-  const handleAttendanceSuccess = async (type: 'checkin' | 'checkout', timestamp: string) => {
+  const handleAttendanceSuccess = async (type: 'checkin' | 'checkout', timestamp: string, photo?: string) => {
     if (!user?.id) return;
     try {
       await fetch('/api/attendance', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ userId: user.id, type }),
+        body:    JSON.stringify({ userId: user.id, type, photo }),
       });
     } catch (err) {
       console.error('Failed to save attendance', err);
@@ -240,10 +240,10 @@ export default function DashboardPage() {
         <AttendanceCamera
           type={cameraOpen}
           onClose={() => setCameraOpen(null)}
-          onSuccess={(timestamp) => {
+          onSuccess={(timestamp, photo) => {
             const type = cameraOpen;
             setCameraOpen(null);
-            handleAttendanceSuccess(type, timestamp);
+            handleAttendanceSuccess(type, timestamp, photo);
           }}
         />
       )}

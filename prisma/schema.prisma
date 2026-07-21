@@ -88,6 +88,8 @@ model Attendance {
   checkOutTime DateTime?        @db.Time
   status       AttendanceStatus @default(HADIR)
   notes        String?
+  checkInPhoto String?          // base64 WebP or Supabase Storage URL
+  checkOutPhoto String?         // base64 WebP or Supabase Storage URL
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
 
@@ -115,6 +117,7 @@ model Permission {
   endDate   DateTime         @db.Date
   reason    String
   status    PermissionStatus @default(PENDING)
+  attachment String?         // base64 WebP or Supabase Storage URL
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { uploadToBucket } from '@/lib/storage'
 
 // Helper: format Date to "YYYY-MM-DD"
 function fmtDate(d: Date): string {
@@ -35,6 +36,7 @@ export async function GET(req: NextRequest) {
       reason:    r.reason,
       status:    r.status.toLowerCase() as 'pending' | 'approved' | 'rejected',
       createdAt: fmtDate(r.createdAt),
+      attachment: r.attachment,
     }))
 
     return NextResponse.json({ permissions: formatted })
@@ -47,7 +49,7 @@ export async function GET(req: NextRequest) {
 // ─── POST /api/permissions  (create new leave request) ───────────────────────
 export async function POST(req: NextRequest) {
   try {
-    const { userId, type, startDate, endDate, reason } = await req.json()
+    const { userId, type, startDate, endDate, reason, attachment } = await req.json()
 
     if (!userId || !type || !startDate || !endDate || !reason) {
       return NextResponse.json(
@@ -60,6 +62,12 @@ export async function POST(req: NextRequest) {
       izin: 'IZIN', cuti: 'CUTI', sakit: 'SAKIT',
     }
 
+    let attachmentUrl: string | null = null
+    if (attachment) {
+      const fileName = `${userId}_permission_${Date.now()}.webp`
+      attachmentUrl = await uploadToBucket(attachment, fileName)
+    }
+
     const record = await prisma.permission.create({
       data: {
         userId,
@@ -68,6 +76,7 @@ export async function POST(req: NextRequest) {
         endDate:   new Date(endDate),
         reason,
         status:    'PENDING',
+        attachment: attachmentUrl,
       },
     })
 

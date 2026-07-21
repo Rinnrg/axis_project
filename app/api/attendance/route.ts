@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { uploadToBucket } from '@/lib/storage'
 
 // Helper: format Date object to "HH:mm" string
 function fmtTime(d: Date | null): string | null {
@@ -53,6 +54,8 @@ export async function GET(req: NextRequest) {
       checkOutTime: fmtTime(r.checkOutTime),
       status:       r.status.toLowerCase() as 'hadir' | 'telat' | 'izin' | 'alpha',
       notes:        r.notes ?? '',
+      checkInPhoto: r.checkInPhoto,
+      checkOutPhoto: r.checkOutPhoto,
     }))
 
     return NextResponse.json({ attendances: formatted })
@@ -65,8 +68,9 @@ export async function GET(req: NextRequest) {
 // ─── POST /api/attendance  (create / checkin) ────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
-    const { userId, type } = await req.json()
+    const { userId, type, photo } = await req.json()
     // type: "checkin" | "checkout"
+    // photo: base64 WebP representation of the user's face
 
     if (!userId || !type) {
       return NextResponse.json({ error: 'userId dan type wajib diisi' }, { status: 400 })
@@ -90,10 +94,16 @@ export async function POST(req: NextRequest) {
       const cutoff = new Date(1970, 0, 1, 8, 30, 0)
       const status = timeValue > cutoff ? 'TELAT' : 'HADIR'
 
+      let checkInPhoto: string | null = null
+      if (photo) {
+        const fileName = `${userId}_checkin_${today.getTime()}.webp`
+        checkInPhoto = await uploadToBucket(photo, fileName)
+      }
+
       const record = await prisma.attendance.upsert({
         where:  { userId_date: { userId, date: today } },
-        update: { checkInTime: timeValue, status, notes: '' },
-        create: { userId, date: today, checkInTime: timeValue, status, notes: '' },
+        update: { checkInTime: timeValue, status, notes: '', checkInPhoto },
+        create: { userId, date: today, checkInTime: timeValue, status, notes: '', checkInPhoto },
       })
 
       return NextResponse.json({ time: timeString, status, id: record.id })
@@ -110,9 +120,15 @@ export async function POST(req: NextRequest) {
         )
       }
 
+      let checkOutPhoto: string | null = null
+      if (photo) {
+        const fileName = `${userId}_checkout_${today.getTime()}.webp`
+        checkOutPhoto = await uploadToBucket(photo, fileName)
+      }
+
       const record = await prisma.attendance.update({
         where: { userId_date: { userId, date: today } },
-        data:  { checkOutTime: timeValue },
+        data:  { checkOutTime: timeValue, checkOutPhoto },
       })
 
       return NextResponse.json({ time: timeString, id: record.id })
