@@ -88,29 +88,36 @@ export default function RiwayatPage() {
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-xl shadow-sm p-4 sm:p-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 w-full">
-            <div className="space-y-1.5 w-full min-w-0">
+        <div className="bg-white rounded-xl shadow-sm p-4 sm:p-5 w-full overflow-hidden">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full">
+            {/* Month */}
+            <div className="flex-1 min-w-0 space-y-1.5">
               <label className="block text-xs sm:text-sm font-medium text-slate-700">Bulan</label>
-              <div className="relative w-full">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              <div className="relative w-full overflow-hidden">
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none z-10" />
                 <input
-                  type="month" value={month}
+                  type="month"
+                  value={month}
                   onChange={e => setMonth(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2.5 border border-slate-300 rounded-lg text-sm
-                             focus:outline-none focus:ring-2 focus:ring-indigo-500 touch-manipulation min-w-0 max-w-full"
+                  className="block w-full pl-9 pr-2 py-2.5 border border-slate-300 rounded-lg text-sm
+                             focus:outline-none focus:ring-2 focus:ring-indigo-500 touch-manipulation
+                             box-border appearance-none bg-white"
+                  style={{ WebkitAppearance: 'none' }}
                 />
               </div>
             </div>
-            <div className="space-y-1.5 w-full min-w-0">
+            {/* Search */}
+            <div className="flex-1 min-w-0 space-y-1.5">
               <label className="block text-xs sm:text-sm font-medium text-slate-700">Cari Catatan</label>
               <div className="relative w-full">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                 <input
-                  type="text" placeholder="Cari catatan..." value={searchTerm}
+                  type="text"
+                  placeholder="Cari catatan..."
+                  value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2.5 border border-slate-300 rounded-lg text-sm
-                             focus:outline-none focus:ring-2 focus:ring-indigo-500 min-w-0 max-w-full"
+                  className="block w-full pl-9 pr-4 py-2.5 border border-slate-300 rounded-lg text-sm
+                             focus:outline-none focus:ring-2 focus:ring-indigo-500 box-border"
                 />
               </div>
             </div>

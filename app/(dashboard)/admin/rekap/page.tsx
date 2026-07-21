@@ -295,14 +295,12 @@ export default function RekapPage() {
         </div>
 
         {/* Filters & Export */}
-        <div className="bg-white rounded-xl shadow-sm p-6 space-y-4">
-          <div className="grid md:grid-cols-3 gap-4">
+        <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 w-full overflow-hidden">
+          <div className="flex flex-col md:grid md:grid-cols-3 gap-4">
             {/* Month Filter */}
-            <div className="space-y-2">
+            <div className="space-y-2 min-w-0">
               <div className="flex justify-between items-center">
-                <label className="block text-sm font-medium text-slate-700">
-                  Bulan
-                </label>
+                <label className="block text-sm font-medium text-slate-700">Bulan</label>
                 <label className="flex items-center gap-1.5 text-xs text-indigo-650 font-bold cursor-pointer select-none">
                   <input
                     type="checkbox"
@@ -320,56 +318,47 @@ export default function RekapPage() {
                   Semua Bulan
                 </label>
               </div>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+              <div className="relative w-full overflow-hidden">
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none z-10" />
                 <input
                   type="month"
                   value={month === 'all' ? '' : month}
                   disabled={month === 'all'}
                   onChange={(e) => setMonth(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-400 disabled:border-slate-200"
+                  className="block w-full pl-9 pr-2 py-2 border border-slate-300 rounded-lg text-sm
+                             focus:outline-none focus:ring-2 focus:ring-indigo-500
+                             disabled:bg-slate-50 disabled:text-slate-400 disabled:border-slate-200
+                             box-border appearance-none bg-white touch-manipulation"
+                  style={{ WebkitAppearance: 'none' }}
                 />
               </div>
             </div>
 
             {/* Employee Search */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-slate-700">
-                Cari Karyawan
-              </label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+            <div className="space-y-2 min-w-0">
+              <label className="block text-sm font-medium text-slate-700">Cari Karyawan</label>
+              <div className="relative w-full">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                 <input
                   type="text"
                   placeholder="Cari nama karyawan..."
                   value={employeeFilter}
                   onChange={(e) => setEmployeeFilter(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="block w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-sm
+                             focus:outline-none focus:ring-2 focus:ring-indigo-500 box-border"
                 />
               </div>
             </div>
 
             {/* Export Buttons */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-slate-700">
-                Export
-              </label>
+              <label className="block text-sm font-medium text-slate-700">Export</label>
               <div className="flex gap-2">
-                <Button
-                  onClick={handleExportMonth}
-                  variant="outline"
-                  size="sm"
-                  className="flex-1"
-                >
+                <Button onClick={handleExportMonth} variant="outline" size="sm" className="flex-1">
                   <Download className="w-4 h-4 mr-1" />
                   Bulan Ini
                 </Button>
-                <Button
-                  onClick={handleExportAll}
-                  variant="outline"
-                  size="sm"
-                  className="flex-1"
-                >
+                <Button onClick={handleExportAll} variant="outline" size="sm" className="flex-1">
                   <Download className="w-4 h-4 mr-1" />
                   Semua
                 </Button>
