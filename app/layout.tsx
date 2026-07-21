@@ -4,8 +4,8 @@ import { Providers } from '@/components/providers';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Sistem Presensi Karyawan',
-  description: 'Aplikasi presensi karyawan modern dan efisien',
+  title: 'CH Alam Juanda - Sistem Presensi',
+  description: 'Aplikasi presensi karyawan CH Alam Juanda',
   icons: {
     icon: [
       { url: '/icon-light-32x32.png', media: '(prefers-color-scheme: light)' },

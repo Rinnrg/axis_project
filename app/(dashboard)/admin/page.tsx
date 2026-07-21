@@ -196,7 +196,7 @@ export default function AdminUsersPage() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-slate-900">Manajemen Pengguna</h1>
-        <p className="text-slate-500 text-sm mt-1">Validasi dan kelola akun karyawan sistem presensi</p>
+        <p className="text-slate-500 text-sm mt-1">Validasi dan kelola akun karyawan sistem CH Alam Juanda</p>
       </div>
 
       {/* Stats Cards */}

@@ -88,7 +88,7 @@ export function Topbar() {
             alt="Axis Logo"
             className="w-8 h-8 object-contain"
           />
-          <span className="font-bold text-slate-900 text-base hidden xs:inline sm:inline">Presensi</span>
+          <span className="font-bold text-slate-900 text-base hidden xs:inline sm:inline">CH Alam Juanda</span>
         </Link>
 
         {/* Desktop nav */}

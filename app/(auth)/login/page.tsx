@@ -78,10 +78,10 @@ function LoginForm() {
           />
           <div>
             <h1 className="text-3xl font-bold text-slate-900">
-              {isAdminLogin ? 'Admin Presensi' : 'Presensi'}
+              {isAdminLogin ? 'Admin CH Alam Juanda' : 'CH Alam Juanda'}
             </h1>
             <p className="text-slate-500 text-sm mt-1">
-              {isAdminLogin ? 'Portal Khusus Administrator' : 'Sistem Presensi Karyawan Modern'}
+              {isAdminLogin ? 'Portal Khusus Administrator' : 'Sistem Kehadiran Karyawan Modern'}
             </p>
           </div>
         </div>
@@ -163,22 +163,6 @@ function LoginForm() {
               </Button>
             </form>
           )}
-
-          {/* Toggle Link */}
-          <div className="text-center pt-4 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={() => {
-                setIsAdminLogin(!isAdminLogin);
-                setError('');
-                setEmail('');
-                setPassword('');
-              }}
-              className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
-            >
-              {isAdminLogin ? 'Masuk sebagai Karyawan (Google)' : 'Masuk sebagai Administrator'}
-            </button>
-          </div>
         </div>
 
       </div>

@@ -102,7 +102,7 @@ export default function WaitingApprovalPage() {
 
         {/* Footer info */}
         <div className="text-center text-xs text-slate-400">
-          <p>© {new Date().getFullYear()} Presensi. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} CH Alam Juanda. All rights reserved.</p>
         </div>
       </div>
     </div>
