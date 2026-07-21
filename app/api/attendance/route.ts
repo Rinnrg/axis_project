@@ -153,8 +153,8 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ error: 'type tidak valid' }, { status: 400 })
-  } catch (err) {
+  } catch (err: any) {
     console.error('[POST /api/attendance]', err)
-    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+    return NextResponse.json({ error: `Server error: ${err.message || err}` }, { status: 500 })
   }
 }
