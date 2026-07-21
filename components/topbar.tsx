@@ -15,26 +15,6 @@ export function Topbar() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const handleProfileClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setProfileOpen(false);
-    setMenuOpen(false);
-    Swal.fire({
-      title: 'Buka Profil?',
-      text: 'Anda akan dialihkan ke halaman profil Anda.',
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonColor: '#4f46e5', // indigo-600
-      cancelButtonColor: '#64748b', // slate-500
-      confirmButtonText: 'Ya, buka!',
-      cancelButtonText: 'Batal'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        router.push('/profile');
-      }
-    });
-  };
-
   const handleLogoutClick = () => {
     setProfileOpen(false);
     setMenuOpen(false);
@@ -43,8 +23,8 @@ export function Topbar() {
       text: 'Anda akan keluar dari sesi aktif Anda.',
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#ef4444', // red-500
-      cancelButtonColor: '#64748b', // slate-500
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
       confirmButtonText: 'Ya, Keluar',
       cancelButtonText: 'Batal'
     }).then((result) => {
@@ -73,7 +53,6 @@ export function Topbar() {
         { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
         { label: 'Riwayat',   href: '/riwayat',   icon: Calendar },
         { label: 'Izin',      href: '/izin',       icon: FileText },
-        { label: 'Profile',   href: '/profile',    icon: User },
       ];
 
   const isActive = (href: string) => pathname === href;
@@ -98,11 +77,6 @@ export function Topbar() {
             <Link
               key={item.href}
               href={item.href}
-              onClick={(e) => {
-                if (item.href === '/profile') {
-                  handleProfileClick(e);
-                }
-              }}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 isActive(item.href)
                   ? 'bg-indigo-50 text-indigo-700'
@@ -115,7 +89,7 @@ export function Topbar() {
           ))}
         </nav>
 
-        {/* Desktop right (Clickable Profile dropdown) */}
+        {/* Desktop right — avatar dropdown */}
         <div className="hidden md:flex items-center gap-3 relative">
           <button
             onClick={() => setProfileOpen(v => !v)}
@@ -139,7 +113,7 @@ export function Topbar() {
             )}
           </button>
 
-          {/* Transparent click backdrop to close dropdown */}
+          {/* Dropdown */}
           {profileOpen && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setProfileOpen(false)} />
@@ -150,13 +124,14 @@ export function Topbar() {
                   <p className="text-xs text-slate-500 truncate">{user?.email}</p>
                 </div>
                 <div className="p-1">
-                  <button
-                    onClick={handleProfileClick}
+                  <Link
+                    href="/profile"
+                    onClick={() => setProfileOpen(false)}
                     className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 rounded-xl transition-colors"
                   >
                     <User className="w-4 h-4" />
                     <span>Profil Saya</span>
-                  </button>
+                  </Link>
                   <button
                     onClick={handleLogoutClick}
                     className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-xl transition-colors"
@@ -197,18 +172,19 @@ export function Topbar() {
       {/* Mobile dropdown menu */}
       {menuOpen && (
         <div className="md:hidden border-t border-slate-100 bg-white">
-          {/* User info banner with sweetalert redirection */}
+          {/* User info banner */}
           <div className="px-4 py-3 bg-indigo-50 border-b border-indigo-100 flex items-center justify-between">
             <div>
               <p className="text-sm font-semibold text-indigo-900">{user?.name}</p>
               <p className="text-xs text-indigo-600">{user?.position} • {user?.department}</p>
             </div>
-            <button
-              onClick={handleProfileClick}
+            <Link
+              href="/profile"
+              onClick={() => setMenuOpen(false)}
               className="text-xs font-semibold text-indigo-700 bg-indigo-100 hover:bg-indigo-200 px-2.5 py-1.5 rounded-lg transition-colors"
             >
               Profil
-            </button>
+            </Link>
           </div>
 
           <div className="px-3 py-2 space-y-0.5">
@@ -216,13 +192,7 @@ export function Topbar() {
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={(e) => {
-                  if (item.href === '/profile') {
-                    handleProfileClick(e);
-                  } else {
-                    setMenuOpen(false);
-                  }
-                }}
+                onClick={() => setMenuOpen(false)}
                 className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors touch-manipulation ${
                   isActive(item.href)
                     ? 'bg-indigo-50 text-indigo-700'

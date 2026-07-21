@@ -21,9 +21,9 @@ export default function DashboardPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
 
-  const [cameraOpen, setCameraOpen]     = useState<'checkin' | 'checkout' | null>(null);
-  const [todayAtt,   setTodayAtt]       = useState<TodayAttendance | null>(null);
-  const [attLoading, setAttLoading]     = useState(true);
+  const [cameraOpen, setCameraOpen] = useState<'checkin' | 'checkout' | null>(null);
+  const [todayAtt, setTodayAtt] = useState<TodayAttendance | null>(null);
+  const [attLoading, setAttLoading] = useState(true);
 
   // ── Redirect admin ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -65,14 +65,14 @@ export default function DashboardPage() {
       const localTimeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 
       const res = await fetch('/api/attendance', {
-        method:  'POST',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ 
-          userId: user.id, 
-          type, 
-          photo, 
-          date: todayDateStr, 
-          localTime: localTimeStr 
+        body: JSON.stringify({
+          userId: user.id,
+          type,
+          photo,
+          date: todayDateStr,
+          localTime: localTimeStr
         }),
       });
 
@@ -99,9 +99,9 @@ export default function DashboardPage() {
 
     // Optimistically update UI with the timestamp shown on camera success screen
     setTodayAtt(prev => ({
-      checkInTime:  prev?.checkInTime  ?? null,
+      checkInTime: prev?.checkInTime ?? null,
       checkOutTime: prev?.checkOutTime ?? null,
-      status:       prev?.status ?? 'hadir',
+      status: prev?.status ?? 'hadir',
       ...prev,
       [type === 'checkin' ? 'checkInTime' : 'checkOutTime']: timestamp,
     }));
@@ -115,8 +115,8 @@ export default function DashboardPage() {
     switch (status) {
       case 'hadir': return <CheckCircle className="w-5 h-5 text-emerald-500" />;
       case 'telat': return <AlertCircle className="w-5 h-5 text-amber-500" />;
-      case 'izin':  return <FileText    className="w-5 h-5 text-blue-500" />;
-      default:      return <Clock       className="w-5 h-5 text-slate-400" />;
+      case 'izin': return <FileText className="w-5 h-5 text-blue-500" />;
+      default: return <Clock className="w-5 h-5 text-slate-400" />;
     }
   };
 
@@ -124,8 +124,8 @@ export default function DashboardPage() {
     switch (status) {
       case 'hadir': return 'bg-emerald-50 border-emerald-200 text-emerald-700';
       case 'telat': return 'bg-amber-50  border-amber-200  text-amber-700';
-      case 'izin':  return 'bg-blue-50   border-blue-200   text-blue-700';
-      default:      return 'bg-slate-50  border-slate-200  text-slate-700';
+      case 'izin': return 'bg-blue-50   border-blue-200   text-blue-700';
+      default: return 'bg-slate-50  border-slate-200  text-slate-700';
     }
   };
 
@@ -139,7 +139,7 @@ export default function DashboardPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 leading-tight">
-              Selamat Datang,<br className="sm:hidden" /> {user?.name}! 👋
+              Selamat Datang,<br className="sm:hidden" /> {user?.name}!
             </h1>
             <p className="text-slate-500 mt-1 text-sm sm:text-base">
               {user?.position} • {user?.department}
