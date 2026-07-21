@@ -269,171 +269,124 @@ export function AttendanceCamera({ type, onClose, onSuccess }: AttendanceCameraP
         }}
       />
 
-      {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/90 z-50 flex flex-col backdrop-blur-sm overflow-y-auto">
-
-        {/* ---- MOBILE: top bar ---- */}
-        <div className="flex items-center justify-between px-4 pt-safe-top pt-4 pb-3 sm:hidden">
-          <div>
-            <h2 className="text-base font-bold text-white">
-              {type === 'checkin' ? '📍 Presensi Masuk' : '👋 Presensi Pulang'}
-            </h2>
-            <p className="text-xs text-white/50">Verifikasi wajah diperlukan</p>
+      {/* Backdrop & Center Container */}
+      <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm overflow-y-auto">
+        
+        {/* Responsive Camera Card */}
+        <div className="w-full max-w-lg bg-slate-950/95 border border-slate-800 rounded-3xl p-4 sm:p-6 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200">
+          
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                {type === 'checkin' ? '📍 Presensi Masuk' : '👋 Presensi Pulang'}
+              </h2>
+              <p className="text-xs text-slate-400">Verifikasi wajah diperlukan</p>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 p-2 rounded-xl transition-colors touch-manipulation"
+              aria-label="Tutup"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="text-white/70 hover:text-white bg-white/10 hover:bg-white/20 p-2 rounded-xl transition-colors touch-manipulation"
-            aria-label="Tutup"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
 
-        {/* ---- CENTER CONTENT (desktop: centered, mobile: full width) ---- */}
-        <div className="flex-1 flex items-start sm:items-center justify-center sm:p-4">
-          <div className="w-full sm:max-w-2xl space-y-3 sm:space-y-4">
+          {/* Video / Camera Frame (Unified aspect-video 16:9 to match camera stream) */}
+          <div className="relative bg-slate-900 overflow-hidden ring-1 ring-white/10 rounded-2xl aspect-video shadow-inner">
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="w-full h-full object-cover scale-x-[-1]"
+            />
 
-            {/* Desktop header */}
-            <div className="hidden sm:flex items-center justify-between px-0">
-              <div>
-                <h2 className="text-xl font-bold text-white">
-                  {type === 'checkin' ? '📍 Presensi Masuk' : '👋 Presensi Pulang'}
-                </h2>
-                <p className="text-sm text-white/50 mt-0.5">Verifikasi wajah diperlukan</p>
+            {/* Overlay canvas (face-api drawings) */}
+            <canvas
+              ref={overlayCanvasRef}
+              className="absolute inset-0 w-full h-full scale-x-[-1] pointer-events-none"
+            />
+            {/* Hidden capture canvas */}
+            <canvas ref={canvasRef} className="hidden" />
+
+            {/* Face guide oval */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="relative w-[45%] sm:w-[160px]" style={{ aspectRatio: '220/280' }}>
+                <svg viewBox="0 0 220 280" className="absolute inset-0 w-full h-full">
+                  <ellipse
+                    cx="110" cy="140" rx="100" ry="130"
+                    fill="none" strokeWidth="3"
+                    stroke={faceDetected ? '#10b981' : 'rgba(255,255,255,0.3)'}
+                    strokeDasharray={faceDetected ? '0' : '10 5'}
+                    className="transition-all duration-500"
+                  />
+                  <path d="M 20 60 Q 10 10 60 10"   fill="none" strokeWidth="4" stroke="#06b6d4" strokeLinecap="round" />
+                  <path d="M 200 60 Q 210 10 160 10" fill="none" strokeWidth="4" stroke="#06b6d4" strokeLinecap="round" />
+                  <path d="M 20 220 Q 10 270 60 270" fill="none" strokeWidth="4" stroke="#06b6d4" strokeLinecap="round" />
+                  <path d="M 200 220 Q 210 270 160 270" fill="none" strokeWidth="4" stroke="#06b6d4" strokeLinecap="round" />
+                </svg>
               </div>
-              <button
-                onClick={onClose}
-                className="text-white/70 hover:text-white hover:bg-white/10 p-2 rounded-xl transition-colors"
-                aria-label="Tutup kamera"
-              >
-                <X className="w-6 h-6" />
-              </button>
             </div>
 
-            {/* Video container */}
-            {/* Mobile: full-width, 4:3 aspect | Desktop: 16:9 */}
-            <div className="relative bg-black overflow-hidden ring-1 ring-white/10
-                            sm:rounded-2xl sm:aspect-video
-                            aspect-[4/3] rounded-none sm:rounded-2xl">
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="w-full h-full object-cover scale-x-[-1]"
-              />
+            {/* Status badge */}
+            <div className="absolute top-3 left-1/2 -translate-x-1/2">
+              {statusBadge()}
+            </div>
 
-              {/* Overlay canvas (face-api drawings) */}
-              <canvas
-                ref={overlayCanvasRef}
-                className="absolute inset-0 w-full h-full scale-x-[-1] pointer-events-none"
-              />
-              {/* Hidden capture canvas */}
-              <canvas ref={canvasRef} className="hidden" />
-
-              {/* Face guide oval — scales with container */}
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="relative w-[38%] sm:w-[220px]" style={{ aspectRatio: '220/280' }}>
-                  <svg viewBox="0 0 220 280" className="absolute inset-0 w-full h-full">
-                    <ellipse
-                      cx="110" cy="140" rx="100" ry="130"
-                      fill="none" strokeWidth="3"
-                      stroke={faceDetected ? '#10b981' : 'rgba(255,255,255,0.35)'}
-                      strokeDasharray={faceDetected ? '0' : '12 6'}
-                      className="transition-all duration-500"
-                    />
-                    <path d="M 20 60 Q 10 10 60 10"   fill="none" strokeWidth="4" stroke="#06b6d4" strokeLinecap="round" />
-                    <path d="M 200 60 Q 210 10 160 10" fill="none" strokeWidth="4" stroke="#06b6d4" strokeLinecap="round" />
-                    <path d="M 20 220 Q 10 270 60 270" fill="none" strokeWidth="4" stroke="#06b6d4" strokeLinecap="round" />
-                    <path d="M 200 220 Q 210 270 160 270" fill="none" strokeWidth="4" stroke="#06b6d4" strokeLinecap="round" />
-                  </svg>
-                </div>
+            {/* Loading overlay */}
+            {isLoading && (
+              <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-3">
+                <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
+                <p className="text-white/80 text-xs text-center px-4">
+                  {!libraryReady
+                    ? 'Memuat library...'
+                    : !modelsLoaded
+                      ? 'Memuat model AI...'
+                      : 'Memulai kamera...'}
+                </p>
               </div>
-
-              {/* Status badge */}
-              <div className="absolute top-3 left-1/2 -translate-x-1/2">
-                {statusBadge()}
-              </div>
-
-              {/* Loading overlay */}
-              {isLoading && (
-                <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-3">
-                  <Loader2 className="w-8 h-8 sm:w-10 sm:h-10 text-cyan-400 animate-spin" />
-                  <p className="text-white/80 text-sm text-center px-4">
-                    {!libraryReady
-                      ? 'Memuat library face-api.js...'
-                      : !modelsLoaded
-                        ? 'Memuat model AI deteksi wajah...'
-                        : 'Memulai kamera...'}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* ---- MOBILE tip strip (collapsed by default) ---- */}
-            <div className="sm:hidden px-4">
-              <button
-                onClick={() => setShowTips(v => !v)}
-                className="flex items-center gap-2 text-white/60 text-xs mb-2 touch-manipulation"
-              >
-                <Info className="w-3.5 h-3.5" />
-                {showTips ? 'Sembunyikan petunjuk' : 'Lihat petunjuk penggunaan'}
-              </button>
-              {showTips && (
-                <div className="bg-white/8 border border-white/15 rounded-xl p-3 text-white text-xs space-y-1">
-                  <ul className="list-disc list-inside space-y-0.5 text-white/70">
-                    <li>Posisikan wajah di dalam oval</li>
-                    <li>Pastikan pencahayaan cukup</li>
-                    <li>Tatap langsung ke kamera</li>
-                    <li>Tunggu indikator hijau</li>
-                  </ul>
-                </div>
-              )}
-            </div>
-
-            {/* ---- DESKTOP instructions ---- */}
-            <div className="hidden sm:block bg-white/8 backdrop-blur border border-white/15 rounded-xl p-4 text-white text-sm space-y-2">
-              <p className="font-semibold text-white/90">📋 Petunjuk:</p>
-              <ul className="list-disc list-inside space-y-1 text-white/70">
-                <li>Posisikan wajah Anda di dalam oval</li>
-                <li>Pastikan pencahayaan cukup — hindari backlight</li>
-                <li>Tatap langsung ke kamera</li>
-                <li>Tunggu indikator hijau sebelum klik tombol</li>
-                <li>Tidak ada foto yang diunggah ke server</li>
-              </ul>
-            </div>
-
-            {/* Action buttons */}
-            <div className="flex items-center gap-3 px-4 sm:px-0 pb-safe-bottom pb-4 sm:pb-0">
-              <Button
-                onClick={onClose}
-                variant="outline"
-                className="flex-1 bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white
-                           h-12 sm:h-10 text-sm sm:text-sm touch-manipulation"
-              >
-                Batal
-              </Button>
-              <Button
-                onClick={handleCapture}
-                disabled={!faceDetected || isCapturing}
-                className={`flex-1 text-white font-semibold transition-all duration-300
-                             h-12 sm:h-10 text-sm touch-manipulation ${
-                  faceDetected
-                    ? accentColor === 'indigo'
-                      ? 'bg-gradient-to-r from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 shadow-lg shadow-indigo-500/30'
-                      : 'bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 shadow-lg shadow-emerald-500/30'
-                    : 'bg-slate-600 cursor-not-allowed opacity-60'
-                }`}
-              >
-                {isCapturing ? (
-                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Memverifikasi...</>
-                ) : (
-                  <><Camera className="w-4 h-4 mr-2" />{faceDetected ? 'Konfirmasi Presensi' : 'Menunggu Wajah...'}</>
-                )}
-              </Button>
-            </div>
-
+            )}
           </div>
+
+          {/* Compact Instructions */}
+          <div className="bg-white/5 border border-white/10 rounded-xl p-3 text-xs space-y-1 text-slate-300">
+            <p className="font-semibold text-white">📋 Petunjuk:</p>
+            <ul className="list-disc list-inside space-y-0.5 text-slate-400">
+              <li>Posisikan wajah Anda di dalam bingkai oval</li>
+              <li>Pastikan cahaya cukup dan wajah terlihat jelas</li>
+              <li>Tunggu indikator hijau sebelum menekan tombol</li>
+            </ul>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex items-center gap-3 pt-1">
+            <Button
+              onClick={onClose}
+              variant="outline"
+              className="flex-1 bg-white/5 border-white/10 text-white hover:bg-white/10 hover:text-white h-11 text-xs sm:text-sm touch-manipulation"
+            >
+              Batal
+            </Button>
+            <Button
+              onClick={handleCapture}
+              disabled={!faceDetected || isCapturing}
+              className={`flex-1 text-white font-semibold transition-all duration-300 h-11 text-xs sm:text-sm touch-manipulation ${
+                faceDetected
+                  ? accentColor === 'indigo'
+                    ? 'bg-gradient-to-r from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800 shadow-lg shadow-indigo-500/30'
+                    : 'bg-gradient-to-r from-emerald-500 to-emerald-700 hover:from-emerald-600 hover:to-emerald-800 shadow-lg shadow-emerald-500/30'
+                  : 'bg-slate-800 cursor-not-allowed opacity-50 text-slate-500 border border-slate-700/50'
+              }`}
+            >
+              {isCapturing ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Memverifikasi...</>
+              ) : (
+                <><Camera className="w-4 h-4 mr-2" />{faceDetected ? 'Ambil Foto' : 'Mencari Wajah...'}</>
+              )}
+            </Button>
+          </div>
+
         </div>
       </div>
     </>
