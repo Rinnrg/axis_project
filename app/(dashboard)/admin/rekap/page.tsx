@@ -179,7 +179,12 @@ export default function RekapPage() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string, permissionType?: string | null) => {
+    if (status === 'izin' && permissionType) {
+      if (permissionType === 'CUTI') return 'bg-violet-100 text-violet-700 border border-violet-200';
+      if (permissionType === 'SAKIT') return 'bg-rose-100 text-rose-700 border border-rose-200';
+      return 'bg-blue-100 text-blue-700 border border-blue-200';
+    }
     const styles: Record<string, string> = {
       hadir: 'bg-emerald-100 text-emerald-700 border border-emerald-200',
       telat: 'bg-amber-100 text-amber-700 border border-amber-200',
@@ -189,7 +194,12 @@ export default function RekapPage() {
     return styles[status] || styles.alpha;
   };
 
-  const getStatusLabel = (status: string) => {
+  const getStatusLabel = (status: string, permissionType?: string | null) => {
+    if (status === 'izin' && permissionType) {
+      if (permissionType === 'CUTI') return '🌴 Cuti';
+      if (permissionType === 'SAKIT') return '🤒 Sakit';
+      return 'ℹ Izin';
+    }
     const labels: Record<string, string> = {
       hadir: '✓ Hadir',
       telat: '⚠ Telat',
@@ -383,33 +393,16 @@ export default function RekapPage() {
               <table className="w-full">
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-slate-700">
-                      No
-                    </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-slate-700">
-                      Nama Karyawan
-                    </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-slate-700">
-                      Sebagai (Role)
-                    </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-slate-700">
-                      Tanggal
-                    </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-slate-700">
-                      Jam Masuk
-                    </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-slate-700">
-                      Jam Pulang
-                    </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-slate-700">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-slate-700">
-                      Bukti Hadir
-                    </th>
-                    <th className="px-6 py-3 text-right text-sm font-semibold text-slate-700">
-                      Aksi
-                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-slate-700">No</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-slate-700">Nama Karyawan</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-slate-700">Sebagai (Role)</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-slate-700">Tanggal</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-slate-700">Jam Masuk</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-slate-700">Jam Pulang</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-slate-700">Status</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-slate-700">Keterangan</th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-slate-700">Bukti Hadir</th>
+                    <th className="px-6 py-3 text-right text-sm font-semibold text-slate-700">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
@@ -449,10 +442,20 @@ export default function RekapPage() {
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <span
-                          className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadge(item.status)}`}
+                          className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadge(item.status, item.permissionType)}`}
                         >
-                          {getStatusLabel(item.status)}
+                          {getStatusLabel(item.status, item.permissionType)}
                         </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-600 max-w-[180px]">
+                        {item.permissionType ? (
+                          <div>
+                            <span className="block font-bold text-[10px] uppercase tracking-wider mb-0.5 text-slate-400">{item.permissionType}</span>
+                            <span className="text-xs leading-relaxed line-clamp-2">{item.permissionReason || '-'}</span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-slate-400 italic">{item.notes || '-'}</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <div className="flex flex-wrap gap-1.5">

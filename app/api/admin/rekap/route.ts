@@ -112,14 +112,16 @@ export async function GET(req: NextRequest) {
         checkOutTime: fmtTime(att.checkOutTime),
         status: att.status.toLowerCase(),
         notes: att.notes || '',
+        permissionType: null,
+        permissionReason: null,
         hasCheckInPhoto: !!att.checkInPhoto,
         hasCheckOutPhoto: !!att.checkOutPhoto,
         hasAttachment: false,
       })
     }
 
-    // Process permissions: for each approved permission, generate daily entries
-    // if the employee doesn't already have an attendance record on that date.
+    // Process ALL approved permissions: generate a dedicated row per day of each permission.
+    // These always appear in rekap — separate from attendance records.
     for (const perm of permissions) {
       const emp = employeeMap.get(perm.userId)
       if (!emp) continue
@@ -128,40 +130,33 @@ export async function GET(req: NextRequest) {
       const start = (isAll || perm.startDate > startDate) ? perm.startDate : startDate
       const end = (isAll || perm.endDate < endDate) ? perm.endDate : new Date(Date.UTC(year, month - 1, 31))
 
-      // Loop through dates
+      // Loop through each day of the permission
       const curr = new Date(start.getTime())
-      // Cap loop just in case to prevent infinite loops (especially in 'all' mode, cap at 100 days per permission)
       let safetyCounter = 0
       const limit = isAll ? 100 : 35
       while (curr <= end && safetyCounter < limit) {
         safetyCounter++
         const dateStr = fmtDate(curr)
 
-        // Check if employee already has an attendance record on this date
-        const hasAtt = attendances.some(
-          a => a.userId === perm.userId && fmtDate(a.date) === dateStr
-        )
+        rekapRecords.push({
+          id: `perm-${perm.id}-${dateStr}`,
+          employeeId: perm.userId,
+          employeeName: emp.name,
+          email: emp.email,
+          position: emp.position || '-',
+          department: emp.department || '-',
+          date: dateStr,
+          checkInTime: null,
+          checkOutTime: null,
+          status: 'izin',
+          notes: `${perm.type.toUpperCase()}: ${perm.reason}`,
+          permissionType: perm.type.toUpperCase(),  // IZIN | CUTI | SAKIT
+          permissionReason: perm.reason,
+          hasCheckInPhoto: false,
+          hasCheckOutPhoto: false,
+          hasAttachment: !!perm.attachment,
+        })
 
-        if (!hasAtt) {
-          rekapRecords.push({
-            id: `perm-${perm.id}-${dateStr}`,
-            employeeId: perm.userId,
-            employeeName: emp.name,
-            email: emp.email,
-            position: emp.position || '-',
-            department: emp.department || '-',
-            date: dateStr,
-            checkInTime: null,
-            checkOutTime: null,
-            status: 'izin',
-            notes: `${perm.type.toUpperCase()}: ${perm.reason}`,
-            hasCheckInPhoto: false,
-            hasCheckOutPhoto: false,
-            hasAttachment: !!perm.attachment,
-          })
-        }
-
-        // Increment day
         curr.setUTCDate(curr.getUTCDate() + 1)
       }
     }
