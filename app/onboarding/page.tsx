@@ -89,7 +89,6 @@ export default function OnboardingPage() {
           />
           <div>
             <h1 className="text-3xl font-bold text-slate-900">Lengkapi Profil</h1>
-            <p className="text-slate-500 text-sm mt-1">Langkah terakhir sebelum masuk ke sistem CH Alam Juanda</p>
           </div>
         </div>
 

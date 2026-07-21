@@ -81,7 +81,7 @@ function LoginForm() {
               {isAdminLogin ? 'Super Admin CH Alam Juanda' : 'CH Alam Juanda'}
             </h1>
             <p className="text-slate-500 text-sm mt-1">
-              {isAdminLogin ? 'Portal Khusus Super Admin' : 'Sistem Kehadiran Karyawan Modern'}
+              {isAdminLogin ? 'Portal Khusus Super Admin' : 'Sistem CH Alam Juanda'}
             </p>
           </div>
         </div>
