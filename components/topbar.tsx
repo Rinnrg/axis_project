@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { Menu, X, LogOut, LayoutDashboard, Calendar, FileText, User, ClipboardList } from 'lucide-react';
+import { Menu, X, LogOut, LayoutDashboard, Calendar, FileText, User, ClipboardList, UserCheck } from 'lucide-react';
 
 export function Topbar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -21,6 +21,7 @@ export function Topbar() {
   const menuItems = user?.role === 'admin'
     ? [
         { label: 'Dashboard',      href: '/dashboard',   icon: LayoutDashboard },
+        { label: 'Validasi User',  href: '/admin',       icon: UserCheck },
         { label: 'Rekap Presensi', href: '/admin/rekap', icon: ClipboardList },
       ]
     : [
