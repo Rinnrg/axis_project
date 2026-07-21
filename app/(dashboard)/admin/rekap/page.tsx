@@ -541,14 +541,6 @@ export default function RekapPage() {
             </div>
           )}
         </div>
-
-        {/* Note */}
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-          <p className="text-sm text-blue-800 leading-relaxed">
-            <strong>Catatan Admin:</strong> Fitur rekap ini membaca data riil dari database. 
-            Gambar bukti kehadiran dimuat secara on-demand agar performa pemuatan halaman tetap cepat dan hemat bandwidth.
-          </p>
-        </div>
       </div>
 
       {/* Modal Preview Bukti */}

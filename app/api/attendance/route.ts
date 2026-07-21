@@ -169,6 +169,25 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'id diperlukan' }, { status: 400 })
     }
 
+    // If the ID starts with 'perm-', it's a virtual permission row from rekap.
+    // Format: "perm-{permId}-{dateStr}"  → extract permId and delete the permission.
+    if (id.startsWith('perm-')) {
+      const parts = id.split('-')
+      // parts[0] = "perm", parts[1] = permId (cuid), rest = date segments
+      const permId = parts[1]
+
+      if (!permId) {
+        return NextResponse.json({ error: 'Permission ID tidak valid' }, { status: 400 })
+      }
+
+      await prisma.permission.delete({
+        where: { id: permId },
+      })
+
+      return NextResponse.json({ success: true })
+    }
+
+    // Otherwise it's a real attendance record ID
     await prisma.attendance.delete({
       where: { id },
     })
@@ -179,4 +198,3 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: err.message || 'Server error' }, { status: 500 })
   }
 }
-
