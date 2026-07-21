@@ -19,11 +19,12 @@ function GoogleIcon() {
 }
 
 function LoginForm() {
-  const [email,     setEmail]     = useState('');
-  const [password,  setPassword]  = useState('');
-  const [error,     setError]     = useState('');
-  const [loading,   setLoading]   = useState(false);
-  const [gLoading,  setGLoading]  = useState(false);
+  const [isAdminLogin, setIsAdminLogin] = useState(false);
+  const [email,        setEmail]        = useState('');
+  const [password,     setPassword]     = useState('');
+  const [error,        setError]        = useState('');
+  const [loading,      setLoading]      = useState(false);
+  const [gLoading,     setGLoading]     = useState(false);
 
   const router       = useRouter();
   const searchParams = useSearchParams();
@@ -74,85 +75,109 @@ function LoginForm() {
             <span className="text-3xl font-bold text-white">P</span>
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Presensi</h1>
-            <p className="text-slate-500 text-sm mt-1">Sistem Presensi Karyawan Modern</p>
+            <h1 className="text-3xl font-bold text-slate-900">
+              {isAdminLogin ? 'Admin Presensi' : 'Presensi'}
+            </h1>
+            <p className="text-slate-500 text-sm mt-1">
+              {isAdminLogin ? 'Portal Khusus Administrator' : 'Sistem Presensi Karyawan Modern'}
+            </p>
           </div>
         </div>
 
         {/* Error */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex gap-3">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex gap-3 transition-all">
             <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
             <p className="text-sm text-red-700">{error}</p>
           </div>
         )}
 
-        {/* Google Button */}
-        <button
-          type="button"
-          onClick={handleGoogle}
-          disabled={gLoading || loading}
-          className="w-full flex items-center justify-center gap-3 px-4 py-3
-                     bg-white border-2 border-slate-200 rounded-xl text-slate-700 font-semibold
-                     hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700
-                     transition-all duration-200 shadow-sm hover:shadow-md
-                     disabled:opacity-50 disabled:cursor-not-allowed
-                     active:scale-[0.98] touch-manipulation"
-        >
-          {gLoading ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
+        {/* Form/Button Container */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+          {!isAdminLogin ? (
+            /* Employee Login View (Google Only) */
+            <div className="space-y-4 text-center">
+              <p className="text-sm text-slate-500">
+                Silakan masuk menggunakan akun Google Anda untuk mencatat kehadiran.
+              </p>
+              
+              <button
+                type="button"
+                onClick={handleGoogle}
+                disabled={gLoading || loading}
+                className="w-full flex items-center justify-center gap-3 px-4 py-3
+                           bg-white border-2 border-slate-200 rounded-xl text-slate-700 font-semibold
+                           hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-700
+                           transition-all duration-200 shadow-sm hover:shadow-md
+                           disabled:opacity-50 disabled:cursor-not-allowed
+                           active:scale-[0.98] touch-manipulation"
+              >
+                {gLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <GoogleIcon />
+                )}
+                <span>{gLoading ? 'Mengalihkan...' : 'Masuk dengan Google'}</span>
+              </button>
+            </div>
           ) : (
-            <GoogleIcon />
+            /* Admin Login View (Email/Password Only) */
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="email" className="block text-sm font-medium text-slate-700">Email Admin</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+                  <input
+                    id="email" type="email" value={email} required
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="admin@example.com"
+                    className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl
+                               focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="password" className="block text-sm font-medium text-slate-700">Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+                  <input
+                    id="password" type="password" value={password} required
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl
+                               focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  />
+                </div>
+              </div>
+
+              <Button
+                type="submit" disabled={loading || gLoading}
+                className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700
+                           hover:from-indigo-700 hover:to-indigo-800 text-white py-3 rounded-xl
+                           font-semibold transition-all h-12 touch-manipulation"
+              >
+                {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Memproses...</> : 'Masuk sebagai Admin'}
+              </Button>
+            </form>
           )}
-          <span>{gLoading ? 'Mengalihkan...' : 'Masuk dengan Google'}</span>
-        </button>
 
-        {/* Divider */}
-        <div className="flex items-center gap-3">
-          <div className="flex-1 h-px bg-slate-200" />
-          <span className="text-xs text-slate-400 font-medium px-1">atau dengan email</span>
-          <div className="flex-1 h-px bg-slate-200" />
+          {/* Toggle Link */}
+          <div className="text-center pt-4 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => {
+                setIsAdminLogin(!isAdminLogin);
+                setError('');
+                setEmail('');
+                setPassword('');
+              }}
+              className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors"
+            >
+              {isAdminLogin ? 'Masuk sebagai Karyawan (Google)' : 'Masuk sebagai Administrator'}
+            </button>
+          </div>
         </div>
-
-        {/* Email/Password Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <label htmlFor="email" className="block text-sm font-medium text-slate-700">Email</label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
-              <input
-                id="email" type="email" value={email} required
-                onChange={e => setEmail(e.target.value)}
-                placeholder="nama@example.com"
-                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl
-                           focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="password" className="block text-sm font-medium text-slate-700">Password</label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
-              <input
-                id="password" type="password" value={password} required
-                onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl
-                           focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-              />
-            </div>
-          </div>
-
-          <Button
-            type="submit" disabled={loading || gLoading}
-            className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700
-                       hover:from-indigo-700 hover:to-indigo-800 text-white py-3 rounded-xl
-                       font-semibold transition-all h-12 touch-manipulation"
-          >
-            {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Memproses...</> : 'Masuk'}
-          </Button>
-        </form>
 
       </div>
     </div>

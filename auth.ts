@@ -29,7 +29,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           where: { email: credentials.email as string },
         });
 
-        if (!user || !user.password) return null;
+        // Enforce that only users with ADMIN role can login via Credentials
+        if (!user || !user.password || user.role !== 'ADMIN') return null;
 
         // Support plain-text (seed) and bcrypt hashes
         let valid = false;
