@@ -55,7 +55,7 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     fetchUsers();
-    const interval = setInterval(fetchUsers, 5000); // 5-second polling
+    const interval = setInterval(fetchUsers, 5 * 60 * 60 * 1000); // 5-hour polling
     return () => clearInterval(interval);
   }, []);
 

@@ -50,7 +50,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchToday();
-    const interval = setInterval(fetchToday, 5000); // 5-second polling
+    const interval = setInterval(fetchToday, 5 * 60 * 60 * 1000); // 5-hour polling
     return () => clearInterval(interval);
   }, [fetchToday]);
 

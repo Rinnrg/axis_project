@@ -39,7 +39,7 @@ export default function RiwayatPage() {
 
   useEffect(() => {
     fetchRecords();
-    const interval = setInterval(fetchRecords, 5000); // 5-second polling
+    const interval = setInterval(fetchRecords, 5 * 60 * 60 * 1000); // 5-hour polling
     return () => clearInterval(interval);
   }, [fetchRecords]);
 
