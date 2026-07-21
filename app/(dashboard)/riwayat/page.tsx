@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { Calendar, Search, ChevronRight, RefreshCw } from 'lucide-react';
+import { Calendar, Search, ChevronRight, RefreshCw, X } from 'lucide-react';
 
 interface AttendanceRecord {
   id: string;
@@ -11,6 +11,8 @@ interface AttendanceRecord {
   checkOutTime: string | null;
   status: 'hadir' | 'telat' | 'izin' | 'alpha';
   notes: string;
+  checkInPhoto?: string | null;
+  checkOutPhoto?: string | null;
 }
 
 export default function RiwayatPage() {
@@ -22,6 +24,7 @@ export default function RiwayatPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [records,    setRecords]    = useState<AttendanceRecord[]>([]);
   const [loading,    setLoading]    = useState(true);
+  const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null);
 
   const fetchRecords = useCallback(async () => {
     if (!user?.id) return;
@@ -86,28 +89,28 @@ export default function RiwayatPage() {
 
         {/* Filters */}
         <div className="bg-white rounded-xl shadow-sm p-4 sm:p-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-            <div className="space-y-1.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 w-full">
+            <div className="space-y-1.5 w-full min-w-0">
               <label className="block text-xs sm:text-sm font-medium text-slate-700">Bulan</label>
-              <div className="relative">
+              <div className="relative w-full">
                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                 <input
                   type="month" value={month}
                   onChange={e => setMonth(e.target.value)}
                   className="w-full pl-9 pr-4 py-2.5 border border-slate-300 rounded-lg text-sm
-                             focus:outline-none focus:ring-2 focus:ring-indigo-500 touch-manipulation"
+                             focus:outline-none focus:ring-2 focus:ring-indigo-500 touch-manipulation min-w-0 max-w-full"
                 />
               </div>
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 w-full min-w-0">
               <label className="block text-xs sm:text-sm font-medium text-slate-700">Cari Catatan</label>
-              <div className="relative">
+              <div className="relative w-full">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                 <input
                   type="text" placeholder="Cari catatan..." value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
                   className="w-full pl-9 pr-4 py-2.5 border border-slate-300 rounded-lg text-sm
-                             focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                             focus:outline-none focus:ring-2 focus:ring-indigo-500 min-w-0 max-w-full"
                 />
               </div>
             </div>
@@ -156,7 +159,11 @@ export default function RiwayatPage() {
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {filtered.map(a => (
-                      <tr key={a.id} className="hover:bg-slate-50 transition-colors">
+                      <tr 
+                        key={a.id} 
+                        onClick={() => setSelectedRecord(a)}
+                        className="hover:bg-slate-50 transition-colors cursor-pointer"
+                      >
                         <td className="px-5 py-4 text-sm font-medium text-slate-900">
                           {new Date(a.date).toLocaleDateString('id-ID', {
                             weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC',
@@ -169,7 +176,7 @@ export default function RiwayatPage() {
                             {getStatusLabel(a.status)}
                           </span>
                         </td>
-                        <td className="px-5 py-4 text-sm text-slate-500">{a.notes || '—'}</td>
+                        <td className="px-5 py-4 text-sm text-slate-500 max-w-[200px] truncate">{a.notes || '—'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -179,7 +186,11 @@ export default function RiwayatPage() {
               {/* Mobile card list */}
               <div className="md:hidden divide-y divide-slate-100">
                 {filtered.map(a => (
-                  <div key={a.id} className="p-4 flex items-start gap-3">
+                  <div 
+                    key={a.id} 
+                    onClick={() => setSelectedRecord(a)}
+                    className="p-4 flex items-start gap-3 cursor-pointer hover:bg-slate-50 active:bg-slate-100 transition-colors"
+                  >
                     <span className={`mt-0.5 inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold shrink-0 ${getStatusBadge(a.status)}`}>
                       {getStatusLabel(a.status)}
                     </span>
@@ -210,6 +221,109 @@ export default function RiwayatPage() {
         </div>
 
       </div>
+
+      {/* Detail Modal */}
+      {selectedRecord && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" 
+            onClick={() => setSelectedRecord(null)}
+          />
+          
+          {/* Modal Content */}
+          <div className="relative bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto z-10 border border-slate-100 animate-in fade-in zoom-in-95 duration-250 flex flex-col">
+            {/* Header */}
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
+              <div>
+                <h3 className="font-bold text-lg text-slate-900">Detail Kehadiran</h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {new Date(selectedRecord.date).toLocaleDateString('id-ID', {
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC'
+                  })}
+                </p>
+              </div>
+              <button 
+                onClick={() => setSelectedRecord(null)}
+                className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-5 space-y-5 overflow-y-auto flex-1">
+              {/* Status Badge */}
+              <div className="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-100">
+                <span className="text-sm font-medium text-slate-600">Status Kehadiran</span>
+                <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadge(selectedRecord.status)}`}>
+                  {getStatusLabel(selectedRecord.status)}
+                </span>
+              </div>
+
+              {/* Photos Grid */}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Check In */}
+                <div className="space-y-2">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Check In</h4>
+                  <p className="text-sm font-bold text-slate-800">{selectedRecord.checkInTime ? `Pukul ${selectedRecord.checkInTime}` : '—'}</p>
+                  <div className="aspect-[3/4] bg-slate-50 rounded-xl overflow-hidden border border-slate-200 relative flex items-center justify-center shadow-inner">
+                    {selectedRecord.checkInPhoto ? (
+                      <img 
+                        src={selectedRecord.checkInPhoto} 
+                        alt="Foto Check In" 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="text-center p-3">
+                        <p className="text-xs text-slate-400 font-medium">Tidak ada foto</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Check Out */}
+                <div className="space-y-2">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Check Out</h4>
+                  <p className="text-sm font-bold text-slate-800">{selectedRecord.checkOutTime ? `Pukul ${selectedRecord.checkOutTime}` : '—'}</p>
+                  <div className="aspect-[3/4] bg-slate-50 rounded-xl overflow-hidden border border-slate-200 relative flex items-center justify-center shadow-inner">
+                    {selectedRecord.checkOutPhoto ? (
+                      <img 
+                        src={selectedRecord.checkOutPhoto} 
+                        alt="Foto Check Out" 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="text-center p-3">
+                        <p className="text-xs text-slate-400 font-medium">Tidak ada foto</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-1.5">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Catatan Karyawan</h4>
+                <p className="text-sm text-slate-700 italic leading-relaxed">
+                  {selectedRecord.notes || 'Tidak ada catatan khusus.'}
+                </p>
+              </div>
+            </div>
+            
+            {/* Footer */}
+            <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex justify-end">
+              <button
+                onClick={() => setSelectedRecord(null)}
+                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

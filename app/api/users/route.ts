@@ -78,6 +78,36 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// ─── PUT /api/users  (admin: update user position & role) ─────────────────────
+export async function PUT(req: NextRequest) {
+  try {
+    const body = await req.json()
+    const { userId, position } = body
+
+    if (!userId || !position) {
+      return NextResponse.json(
+        { error: 'userId dan position wajib diisi' },
+        { status: 400 }
+      )
+    }
+
+    const newRole = position.toLowerCase() === 'admin' ? 'ADMIN' : 'EMPLOYEE'
+
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        position,
+        role: newRole,
+      },
+    })
+
+    return NextResponse.json({ user })
+  } catch (err: any) {
+    console.error('[PUT /api/users]', err)
+    return NextResponse.json({ error: err.message || 'Server error' }, { status: 500 })
+  }
+}
+
 // ─── DELETE /api/users?userId=xxx  (admin: delete user) ────────────────────────
 export async function DELETE(req: NextRequest) {
   try {

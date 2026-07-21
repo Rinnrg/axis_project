@@ -173,6 +173,50 @@ export default function AdminUsersPage() {
     }
   };
 
+  // Handle Update Position
+  const handleUpdatePosition = async (userId: string, position: string) => {
+    setError('');
+    try {
+      const res = await fetch('/api/users', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId, position }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Gagal mengubah jabatan');
+
+      // Update local state
+      setUsers(prev =>
+        prev.map(user =>
+          user.id === userId
+            ? { ...user, position, role: position.toLowerCase() === 'admin' ? 'admin' : 'employee' }
+            : user
+        )
+      );
+
+      Swal.fire({
+        title: 'Jabatan Diperbarui!',
+        text: `Jabatan pengguna telah diubah menjadi ${position}.`,
+        icon: 'success',
+        timer: 1500,
+        showConfirmButton: false,
+        customClass: { popup: 'rounded-2xl' }
+      });
+    } catch (err: any) {
+      setError(err.message || 'Gagal mengubah jabatan');
+      Swal.fire({
+        title: 'Gagal!',
+        text: err.message || 'Terjadi kesalahan saat mengubah jabatan.',
+        icon: 'error',
+        customClass: { popup: 'rounded-2xl' }
+      });
+    }
+  };
+
+
   // Stats
   const totalUsers = users.length;
   const pendingCount = users.filter(u => u.status === 'PENDING').length;
@@ -344,14 +388,20 @@ export default function AdminUsersPage() {
 
                       {/* Position / Dept */}
                       <td className="px-6 py-4">
-                        {user.position ? (
-                          <div>
-                            <p className="text-slate-800 font-medium">{user.position}</p>
-                            <p className="text-xs text-slate-400">{user.department || 'Umum'}</p>
-                          </div>
-                        ) : (
-                          <span className="text-slate-400 italic text-xs">Belum diisi</span>
-                        )}
+                        <select
+                          value={user.position?.toLowerCase() || ''}
+                          onChange={async (e) => {
+                            const newPos = e.target.value;
+                            await handleUpdatePosition(user.id, newPos);
+                          }}
+                          className="px-3 py-1.5 border border-slate-300 bg-white rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 font-semibold cursor-pointer shadow-sm"
+                        >
+                          <option value="" disabled>Pilih Jabatan</option>
+                          <option value="admin">Admin</option>
+                          <option value="trainer">Trainer</option>
+                          <option value="creative">Creative</option>
+                          <option value="teknisi">Teknisi</option>
+                        </select>
                       </td>
 
                       {/* Join Date */}

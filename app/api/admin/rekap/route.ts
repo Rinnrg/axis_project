@@ -33,9 +33,8 @@ export async function GET(req: NextRequest) {
     const startDate = new Date(Date.UTC(year, month - 1, 1))
     const endDate = new Date(Date.UTC(year, month, 1))
 
-    // 1. Fetch all employees
+    // 1. Fetch all employees (users)
     const employees = await prisma.user.findMany({
-      where: { role: 'EMPLOYEE' },
       select: {
         id: true,
         name: true,

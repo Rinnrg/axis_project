@@ -158,3 +158,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `Server error: ${err.message || err}` }, { status: 500 })
   }
 }
+
+// ─── DELETE /api/attendance?id=xxx ──────────────────────────────────────────
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return NextResponse.json({ error: 'id diperlukan' }, { status: 400 })
+    }
+
+    await prisma.attendance.delete({
+      where: { id },
+    })
+
+    return NextResponse.json({ success: true })
+  } catch (err: any) {
+    console.error('[DELETE /api/attendance]', err)
+    return NextResponse.json({ error: err.message || 'Server error' }, { status: 500 })
+  }
+}
+
