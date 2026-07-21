@@ -26,7 +26,7 @@ export default function DashboardPage() {
 
   // ── Redirect admin ────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!authLoading && user?.role === 'admin') router.push('/admin/rekap');
+    if (!authLoading && user?.role === 'admin') router.push('/admin');
   }, [user, authLoading, router]);
 
   // ── Fetch today's attendance from API ─────────────────────────────────────
