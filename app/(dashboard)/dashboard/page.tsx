@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { ClockWidget } from '@/components/clock-widget';
 import { AttendanceCamera } from '@/components/attendance-camera';
+import Swal from 'sweetalert2';
 import {
   CheckCircle, Clock, AlertCircle, FileText, Calendar, LogIn, LogOut,
 } from 'lucide-react';
@@ -63,7 +64,7 @@ export default function DashboardPage() {
       const todayDateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
       const localTimeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 
-      await fetch('/api/attendance', {
+      const res = await fetch('/api/attendance', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ 
@@ -74,8 +75,26 @@ export default function DashboardPage() {
           localTime: localTimeStr 
         }),
       });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        Swal.fire({
+          icon: 'error',
+          title: 'Presensi Gagal',
+          text: errData.error || 'Terjadi kesalahan pada server saat mencatat absensi.',
+          confirmButtonColor: '#4f46e5'
+        });
+        return;
+      }
     } catch (err) {
       console.error('Failed to save attendance', err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Koneksi Gagal',
+        text: 'Tidak dapat menghubungi server. Pastikan koneksi internet Anda aktif.',
+        confirmButtonColor: '#4f46e5'
+      });
+      return;
     }
 
     // Optimistically update UI with the timestamp shown on camera success screen
