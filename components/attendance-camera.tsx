@@ -144,13 +144,27 @@ export function AttendanceCamera({ type, onClose, onSuccess }: AttendanceCameraP
       const video = videoRef.current;
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d');
-      canvas.width  = video.videoWidth;
-      canvas.height = video.videoHeight;
+      
+      const maxDim = 640;
+      let width = video.videoWidth;
+      let height = video.videoHeight;
+      if (width > maxDim || height > maxDim) {
+        if (width > height) {
+          height = Math.round((height * maxDim) / width);
+          width = maxDim;
+        } else {
+          width = Math.round((width * maxDim) / height);
+          height = maxDim;
+        }
+      }
+
+      canvas.width  = width;
+      canvas.height = height;
       
       // Mirror the captured image to match the video preview scale-x-[-1]
       ctx?.translate(canvas.width, 0);
       ctx?.scale(-1, 1);
-      ctx?.drawImage(video, 0, 0);
+      ctx?.drawImage(video, 0, 0, width, height);
 
       await new Promise(res => setTimeout(res, 600));
 
