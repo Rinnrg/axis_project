@@ -36,7 +36,12 @@ function DashboardGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!isAuthenticated) return null;
+  // Synchronously block rendering of layout/children if not authenticated or not approved
+  const isFullyAuthorized = isAuthenticated && !!user?.phone && user?.status === 'approved';
+
+  if (!isFullyAuthorized) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
