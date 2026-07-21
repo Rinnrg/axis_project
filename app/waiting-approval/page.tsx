@@ -47,6 +47,15 @@ export default function WaitingApprovalPage() {
         {/* Card */}
         <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-md text-center space-y-6">
           
+        {/* Logo */}
+          <div className="text-center">
+            <img
+              src="/axis.svg"
+              alt="Axis Logo"
+              className="h-14 mx-auto object-contain mb-2"
+            />
+          </div>
+
           {/* Icon Header */}
           <div className="relative flex justify-center mx-auto">
             {isRejected ? (
