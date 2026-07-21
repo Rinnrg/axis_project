@@ -71,10 +71,11 @@ function LoginForm() {
 
         {/* Logo */}
         <div className="text-center space-y-3">
-          <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-2xl
-                           flex items-center justify-center mx-auto shadow-lg shadow-indigo-200">
-            <span className="text-3xl font-bold text-white">P</span>
-          </div>
+          <img
+            src="/axis.svg"
+            alt="Axis Logo"
+            className="h-16 mx-auto object-contain"
+          />
           <div>
             <h1 className="text-3xl font-bold text-slate-900">
               {isAdminLogin ? 'Admin Presensi' : 'Presensi'}

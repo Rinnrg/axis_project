@@ -83,10 +83,11 @@ export function Topbar() {
 
         {/* Logo */}
         <Link href="/dashboard" className="flex items-center gap-2.5" onClick={() => setMenuOpen(false)}>
-          <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-lg
-                           flex items-center justify-center text-white font-bold text-sm shadow-sm">
-            P
-          </div>
+          <img
+            src="/axis.svg"
+            alt="Axis Logo"
+            className="w-8 h-8 object-contain"
+          />
           <span className="font-bold text-slate-900 text-base hidden xs:inline sm:inline">Presensi</span>
         </Link>
 
