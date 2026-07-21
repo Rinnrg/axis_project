@@ -1,18 +1,23 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
 import { Topbar } from '@/components/topbar';
 
 function DashboardGuard({ children }: { children: React.ReactNode }) {
   const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!isLoading) {
       if (!isAuthenticated) {
-        router.replace('/login');
+        if (pathname.startsWith('/admin')) {
+          router.replace('/login?role=admin');
+        } else {
+          router.replace('/login');
+        }
       } else if (isAuthenticated) {
         if (!user?.phone) {
           router.replace('/onboarding');
@@ -21,7 +26,7 @@ function DashboardGuard({ children }: { children: React.ReactNode }) {
         }
       }
     }
-  }, [isAuthenticated, isLoading, user, router]);
+  }, [isAuthenticated, isLoading, user, router, pathname]);
 
   if (isLoading) {
     return (

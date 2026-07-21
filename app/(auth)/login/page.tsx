@@ -19,15 +19,16 @@ function GoogleIcon() {
 }
 
 function LoginForm() {
-  const [isAdminLogin, setIsAdminLogin] = useState(false);
+  const router       = useRouter();
+  const searchParams = useSearchParams();
+  
+  const [isAdminLogin, setIsAdminLogin] = useState(searchParams.get('role') === 'admin');
   const [email,        setEmail]        = useState('');
   const [password,     setPassword]     = useState('');
   const [error,        setError]        = useState('');
   const [loading,      setLoading]      = useState(false);
   const [gLoading,     setGLoading]     = useState(false);
 
-  const router       = useRouter();
-  const searchParams = useSearchParams();
   const { login, loginWithGoogle, isAuthenticated } = useAuth();
 
   // Handle OAuth errors redirected back from NextAuth
