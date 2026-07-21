@@ -159,7 +159,7 @@ export default function RiwayatPage() {
                       <tr key={a.id} className="hover:bg-slate-50 transition-colors">
                         <td className="px-5 py-4 text-sm font-medium text-slate-900">
                           {new Date(a.date).toLocaleDateString('id-ID', {
-                            weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
+                            weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC',
                           })}
                         </td>
                         <td className="px-5 py-4 text-sm text-slate-600">{a.checkInTime  || '—'}</td>
@@ -186,7 +186,7 @@ export default function RiwayatPage() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-slate-900">
                         {new Date(a.date).toLocaleDateString('id-ID', {
-                          weekday: 'long', day: 'numeric', month: 'long',
+                          weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC',
                         })}
                       </p>
                       <p className="text-xs text-slate-500 mt-0.5">

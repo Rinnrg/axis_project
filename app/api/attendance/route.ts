@@ -28,16 +28,17 @@ export async function GET(req: NextRequest) {
     const where: Record<string, unknown> = { userId }
 
     if (date) {
-      // Exact date lookup
-      const d = new Date(date)
+      // Exact date lookup using UTC to prevent timezone shifts
+      const [year, month, day] = date.split('-').map(Number)
+      const d = new Date(Date.UTC(year, month - 1, day))
       const next = new Date(d)
-      next.setDate(next.getDate() + 1)
+      next.setUTCDate(next.getUTCDate() + 1)
       where.date = { gte: d, lt: next }
     } else if (month) {
-      // All records in that month
+      // All records in that month using UTC boundaries
       const [year, mon] = month.split('-').map(Number)
-      const start = new Date(year, mon - 1, 1)
-      const end   = new Date(year, mon, 1)
+      const start = new Date(Date.UTC(year, mon - 1, 1))
+      const end   = new Date(Date.UTC(year, mon, 1))
       where.date  = { gte: start, lt: end }
     }
 
@@ -68,26 +69,43 @@ export async function GET(req: NextRequest) {
 // ─── POST /api/attendance  (create / checkin) ────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
-    const { userId, type, photo } = await req.json()
+    const { userId, type, photo, date, localTime } = await req.json()
     // type: "checkin" | "checkout"
     // photo: base64 WebP representation of the user's face
+    // date: "YYYY-MM-DD" local client date
+    // localTime: "HH:mm:ss" local client time
 
     if (!userId || !type) {
       return NextResponse.json({ error: 'userId dan type wajib diisi' }, { status: 400 })
     }
 
-    const now   = new Date()
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const now = new Date()
+    
+    // Parse client date safely to avoid timezone shift
+    let today: Date
+    if (date) {
+      const [year, month, day] = date.split('-').map(Number)
+      today = new Date(Date.UTC(year, month - 1, day))
+    } else {
+      today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()))
+    }
 
-    // Build time Date for Prisma @db.Time field
-    const timeValue = new Date(
-      1970, 0, 1,
-      now.getHours(), now.getMinutes(), now.getSeconds()
-    )
-
-    const timeString = now.toLocaleTimeString('id-ID', {
-      hour: '2-digit', minute: '2-digit', second: '2-digit',
-    })
+    // Build time Date for Prisma @db.Time field using client local time
+    let timeValue: Date
+    let timeString: string
+    if (localTime) {
+      const [h, m, s] = localTime.split(':').map(Number)
+      timeValue = new Date(1970, 0, 1, h, m, s)
+      timeString = localTime
+    } else {
+      timeValue = new Date(
+        1970, 0, 1,
+        now.getHours(), now.getMinutes(), now.getSeconds()
+      )
+      timeString = now.toLocaleTimeString('id-ID', {
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+      })
+    }
 
     if (type === 'checkin') {
       // Determine status: TELAT if after 08:30

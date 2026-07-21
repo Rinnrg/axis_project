@@ -305,6 +305,7 @@ export default function RekapPage() {
                               year: 'numeric',
                               month: 'short',
                               day: 'numeric',
+                              timeZone: 'UTC',
                             }
                           )}
                         </td>

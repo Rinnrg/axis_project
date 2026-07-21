@@ -34,7 +34,9 @@ export default function DashboardPage() {
     if (!user?.id) return;
     setAttLoading(true);
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const now = new Date();
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
       const res = await fetch(`/api/attendance?userId=${user.id}&date=${today}`);
       const data = await res.json();
       const records: TodayAttendance[] = data.attendances ?? [];
@@ -56,10 +58,21 @@ export default function DashboardPage() {
   const handleAttendanceSuccess = async (type: 'checkin' | 'checkout', timestamp: string, photo?: string) => {
     if (!user?.id) return;
     try {
+      const now = new Date();
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const todayDateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+      const localTimeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+
       await fetch('/api/attendance', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ userId: user.id, type, photo }),
+        body:    JSON.stringify({ 
+          userId: user.id, 
+          type, 
+          photo, 
+          date: todayDateStr, 
+          localTime: localTimeStr 
+        }),
       });
     } catch (err) {
       console.error('Failed to save attendance', err);

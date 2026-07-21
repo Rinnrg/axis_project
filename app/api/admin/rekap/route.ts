@@ -30,8 +30,8 @@ export async function GET(req: NextRequest) {
       month = now.getMonth() + 1
     }
 
-    const startDate = new Date(year, month - 1, 1)
-    const endDate = new Date(year, month, 1)
+    const startDate = new Date(Date.UTC(year, month - 1, 1))
+    const endDate = new Date(Date.UTC(year, month, 1))
 
     // 1. Fetch all employees
     const employees = await prisma.user.findMany({
@@ -122,10 +122,10 @@ export async function GET(req: NextRequest) {
 
       // Calculate the start and end dates within the current month
       const start = perm.startDate < startDate ? startDate : perm.startDate
-      const end = perm.endDate >= endDate ? new Date(year, month - 1, 31) : perm.endDate
+      const end = perm.endDate >= endDate ? new Date(Date.UTC(year, month - 1, 31)) : perm.endDate
 
       // Loop through dates
-      const curr = new Date(start)
+      const curr = new Date(start.getTime())
       // Cap loop just in case to prevent infinite loops
       let safetyCounter = 0
       while (curr <= end && safetyCounter < 35) {
@@ -157,7 +157,7 @@ export async function GET(req: NextRequest) {
         }
 
         // Increment day
-        curr.setDate(curr.getDate() + 1)
+        curr.setUTCDate(curr.getUTCDate() + 1)
       }
     }
 

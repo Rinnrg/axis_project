@@ -317,9 +317,9 @@ export default function IzinPage() {
                           {getTypeLabel(perm.type)}
                         </p>
                         <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                          {new Date(perm.startDate).toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' })}
+                          {new Date(perm.startDate).toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric', timeZone: 'UTC' })}
                           {' — '}
-                          {new Date(perm.endDate).toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' })}
+                          {new Date(perm.endDate).toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric', timeZone: 'UTC' })}
                         </p>
                       </div>
                     </div>
