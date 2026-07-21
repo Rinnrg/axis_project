@@ -60,7 +60,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (email) {
         const dbUser = await prisma.user.findUnique({
           where: { email },
-          select: { id: true, name: true, role: true, position: true, department: true, phone: true, status: true },
+          select: { id: true, name: true, role: true, position: true, department: true, phone: true, status: true, image: true, joinDate: true },
         });
         if (dbUser) {
           token.id         = dbUser.id;
@@ -70,6 +70,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           token.department = dbUser.department;
           token.phone      = dbUser.phone;
           token.status     = dbUser.status.toLowerCase();
+          token.image      = dbUser.image;
+          token.joinDate   = dbUser.joinDate ? dbUser.joinDate.toISOString() : null;
         }
       }
       return token;
@@ -85,6 +87,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.department = token.department as string | null;
         session.user.phone      = token.phone      as string | null;
         session.user.status     = token.status     as string | null;
+        session.user.image      = token.image      as string | null;
+        session.user.joinDate   = token.joinDate   as string | null;
       }
       return session;
     },

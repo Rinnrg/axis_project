@@ -125,10 +125,18 @@ export function Topbar() {
               <p className="text-sm font-semibold text-slate-900 leading-tight">{user?.name}</p>
               <p className="text-xs text-slate-500">{user?.position}</p>
             </div>
-            <div className="w-9 h-9 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full
-                             flex items-center justify-center text-white font-bold text-sm shadow-sm">
-              {user?.name?.charAt(0).toUpperCase()}
-            </div>
+            {user?.image ? (
+              <img
+                src={user.image}
+                alt={user.name}
+                className="w-9 h-9 rounded-full object-cover shadow-sm border border-slate-200"
+              />
+            ) : (
+              <div className="w-9 h-9 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full
+                               flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                {user?.name?.charAt(0).toUpperCase()}
+              </div>
+            )}
           </button>
 
           {/* Transparent click backdrop to close dropdown */}
@@ -164,10 +172,18 @@ export function Topbar() {
 
         {/* Mobile right: avatar + hamburger */}
         <div className="md:hidden flex items-center gap-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full
-                           flex items-center justify-center text-white text-xs font-bold">
-            {user?.name?.charAt(0).toUpperCase()}
-          </div>
+          {user?.image ? (
+            <img
+              src={user.image}
+              alt={user.name}
+              className="w-8 h-8 rounded-full object-cover shadow-sm border border-slate-200"
+            />
+          ) : (
+            <div className="w-8 h-8 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full
+                             flex items-center justify-center text-white text-xs font-bold">
+              {user?.name?.charAt(0).toUpperCase()}
+            </div>
+          )}
           <button
             onClick={() => setMenuOpen(v => !v)}
             className="p-2 hover:bg-slate-100 rounded-lg transition-colors touch-manipulation"

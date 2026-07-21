@@ -23,7 +23,10 @@ export async function POST(req: NextRequest) {
     // 4. Update status in database
     const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: { status },
+      data: { 
+        status,
+        ...(action === 'approve' ? { joinDate: new Date() } : {})
+      },
       select: { id: true, name: true, email: true, status: true },
     });
 

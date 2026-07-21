@@ -9,6 +9,8 @@ declare module 'next-auth' {
       department?: string | null;
       phone?:      string | null;
       status?:     string | null;
+      joinDate?:   string | null;
+      image?:      string | null;
     } & DefaultSession['user'];
   }
 }
@@ -21,5 +23,7 @@ declare module 'next-auth/jwt' {
     department?:  string | null;
     phone?:       string | null;
     status?:      string | null;
+    joinDate?:    string | null;
+    image?:       string | null;
   }
 }
