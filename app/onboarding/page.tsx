@@ -116,7 +116,7 @@ export default function OnboardingPage() {
                   required
                   onChange={e => setName(e.target.value)}
                   placeholder="Masukkan nama lengkap Anda"
-                  className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl
+                  className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl text-slate-900
                              focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                 />
               </div>
@@ -134,7 +134,7 @@ export default function OnboardingPage() {
                   required
                   onChange={e => setPhone(e.target.value)}
                   placeholder="Contoh: 08123456789"
-                  className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl
+                  className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl text-slate-900
                              focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                 />
               </div>

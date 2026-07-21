@@ -69,7 +69,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           token.position   = dbUser.position;
           token.department = dbUser.department;
           token.phone      = dbUser.phone;
-          token.status     = dbUser.status;
+          token.status     = dbUser.status.toLowerCase();
         }
       }
       return token;

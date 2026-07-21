@@ -132,7 +132,7 @@ function LoginForm() {
                     id="email" type="email" value={email} required
                     onChange={e => setEmail(e.target.value)}
                     placeholder="admin@example.com"
-                    className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl
+                    className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl text-slate-900
                                focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                   />
                 </div>
@@ -146,7 +146,7 @@ function LoginForm() {
                     id="password" type="password" value={password} required
                     onChange={e => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl
+                    className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl text-slate-900
                                focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                   />
                 </div>

@@ -46,7 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         position:    session.user.position    ?? null,
         department:  session.user.department  ?? null,
         phone:       session.user.phone       ?? null,
-        status:     (session.user.status      ?? 'pending') as 'pending' | 'approved' | 'rejected',
+        status:     (session.user.status?.toLowerCase() ?? 'pending') as 'pending' | 'approved' | 'rejected',
       }
     : null;
 
