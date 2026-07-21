@@ -23,6 +23,13 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    if (!user.password) {
+      return NextResponse.json(
+        { error: 'Akun ini login menggunakan Google. Silakan masuk menggunakan Google.' },
+        { status: 401 }
+      )
+    }
+
     // Support plain-text passwords (legacy/seed) AND bcrypt hashes
     let passwordValid = false
     if (user.password.startsWith('$2')) {

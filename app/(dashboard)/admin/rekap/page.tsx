@@ -189,7 +189,7 @@ export default function RekapPage() {
   };
 
   // Flatten the grouped attendance record structure so we can calculate row numbers (index)
-  const flatRecords = Object.values(attendanceByEmployee)
+  const flatRecords = (Object.values(attendanceByEmployee) as Array<{ employee: any; records: any[] }>)
     .flatMap((group) =>
       group.records.map((attendance) => ({
         ...attendance,
