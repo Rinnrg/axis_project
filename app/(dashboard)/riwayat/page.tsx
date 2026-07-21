@@ -37,7 +37,11 @@ export default function RiwayatPage() {
     }
   }, [user?.id, month]);
 
-  useEffect(() => { fetchRecords(); }, [fetchRecords]);
+  useEffect(() => {
+    fetchRecords();
+    const interval = setInterval(fetchRecords, 5000); // 5-second polling
+    return () => clearInterval(interval);
+  }, [fetchRecords]);
 
   const filtered = records.filter(r =>
     !searchTerm || r.notes?.toLowerCase().includes(searchTerm.toLowerCase())

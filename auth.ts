@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma';
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(prisma),
-  session: { strategy: 'jwt' },
+  session: { strategy: 'jwt', maxAge: 5 * 60 * 60 }, // 5 hours session duration
 
   providers: [
     // ── Google OAuth ──────────────────────────────────────────────────────

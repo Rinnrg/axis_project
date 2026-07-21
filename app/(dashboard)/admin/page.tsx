@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import Swal from 'sweetalert2';
 import { 
   Check, 
   X, 
@@ -11,7 +12,8 @@ import {
   Users, 
   Hourglass, 
   Loader2, 
-  AlertCircle 
+  AlertCircle,
+  Trash2
 } from 'lucide-react';
 
 interface User {
@@ -53,10 +55,30 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     fetchUsers();
+    const interval = setInterval(fetchUsers, 5000); // 5-second polling
+    return () => clearInterval(interval);
   }, []);
 
   // Handle Approve/Reject Action
   const handleUserAction = async (userId: string, action: 'approve' | 'reject') => {
+    const isApprove = action === 'approve';
+    
+    const result = await Swal.fire({
+      title: isApprove ? 'Setujui Pendaftaran?' : 'Tolak Pendaftaran?',
+      text: isApprove 
+        ? 'Pengguna ini akan diaktifkan dan dapat melakukan absensi.'
+        : 'Pendaftaran pengguna ini akan ditolak.',
+      icon: isApprove ? 'question' : 'warning',
+      showCancelButton: true,
+      confirmButtonColor: isApprove ? '#10b981' : '#ef4444',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: isApprove ? 'Ya, setujui' : 'Ya, tolak',
+      cancelButtonText: 'Batal',
+      customClass: { popup: 'rounded-2xl' }
+    });
+
+    if (!result.isConfirmed) return;
+
     setActioningUserId(userId);
     setError('');
 
@@ -80,8 +102,72 @@ export default function AdminUsersPage() {
             : user
         )
       );
+
+      Swal.fire({
+        title: 'Berhasil!',
+        text: `Status pengguna telah diperbarui menjadi ${isApprove ? 'Aktif' : 'Ditolak'}.`,
+        icon: 'success',
+        timer: 1500,
+        showConfirmButton: false,
+        customClass: { popup: 'rounded-2xl' }
+      });
     } catch (err: any) {
       setError(err.message || 'Gagal memproses aksi');
+      Swal.fire({
+        title: 'Gagal!',
+        text: err.message || 'Terjadi kesalahan saat memproses aksi.',
+        icon: 'error',
+        customClass: { popup: 'rounded-2xl' }
+      });
+    } finally {
+      setActioningUserId(null);
+    }
+  };
+
+  // Handle Delete Action
+  const handleDeleteUser = async (userId: string) => {
+    const result = await Swal.fire({
+      title: 'Apakah Anda yakin?',
+      text: 'Semua data terkait (presensi, izin) juga akan dihapus secara permanen.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Ya, hapus!',
+      cancelButtonText: 'Batal',
+      customClass: { popup: 'rounded-2xl' }
+    });
+
+    if (!result.isConfirmed) return;
+
+    setActioningUserId(userId);
+    setError('');
+    try {
+      const res = await fetch(`/api/users?userId=${userId}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Gagal menghapus pengguna');
+
+      // Update local state by removing user
+      setUsers(prev => prev.filter(user => user.id !== userId));
+
+      Swal.fire({
+        title: 'Terhapus!',
+        text: 'Pengguna telah berhasil dihapus.',
+        icon: 'success',
+        timer: 1500,
+        showConfirmButton: false,
+        customClass: { popup: 'rounded-2xl' }
+      });
+    } catch (err: any) {
+      setError(err.message || 'Gagal menghapus pengguna');
+      Swal.fire({
+        title: 'Gagal!',
+        text: err.message || 'Gagal menghapus pengguna.',
+        icon: 'error',
+        customClass: { popup: 'rounded-2xl' }
+      });
     } finally {
       setActioningUserId(null);
     }
@@ -312,7 +398,7 @@ export default function AdminUsersPage() {
                           )}
 
                           {/* Reject Action */}
-                          {(user.status === 'PENDING' || user.status === 'APPROVED') && (
+                          {(user.status === 'PENDING' || user.status === 'APPROVED') && user.role !== 'admin' && (
                             <button
                               disabled={isUserActioning}
                               onClick={() => handleUserAction(user.id, 'reject')}
@@ -327,6 +413,21 @@ export default function AdminUsersPage() {
                               )}
                             </button>
                           )}
+
+                          {/* Delete Action */}
+                          <button
+                            disabled={isUserActioning}
+                            onClick={() => handleDeleteUser(user.id)}
+                            className="p-1.5 bg-slate-50 hover:bg-red-50 text-slate-500 hover:text-red-600 border border-slate-200 hover:border-red-200
+                                       rounded-lg transition-colors disabled:opacity-50"
+                            title="Hapus Pengguna"
+                          >
+                            {isUserActioning ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                          </button>
                         </div>
                       </td>
                     </tr>

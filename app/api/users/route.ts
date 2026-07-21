@@ -77,3 +77,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
   }
 }
+
+// ─── DELETE /api/users?userId=xxx  (admin: delete user) ────────────────────────
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url)
+    const userId = searchParams.get('userId')
+
+    if (!userId) {
+      return NextResponse.json({ error: 'userId wajib diisi' }, { status: 400 })
+    }
+
+    await prisma.user.delete({
+      where: { id: userId },
+    })
+
+    return NextResponse.json({ success: true })
+  } catch (err: any) {
+    console.error('[DELETE /api/users]', err)
+    return NextResponse.json({ error: err.message || 'Server error' }, { status: 500 })
+  }
+}

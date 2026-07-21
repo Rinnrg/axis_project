@@ -45,6 +45,8 @@ export default function RekapPage() {
 
   useEffect(() => {
     fetchRekap();
+    const interval = setInterval(fetchRekap, 5000); // 5-second polling
+    return () => clearInterval(interval);
   }, [fetchRekap]);
 
   // Filter attendance data on the client side

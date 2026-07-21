@@ -46,7 +46,11 @@ export default function DashboardPage() {
     }
   }, [user?.id]);
 
-  useEffect(() => { fetchToday(); }, [fetchToday]);
+  useEffect(() => {
+    fetchToday();
+    const interval = setInterval(fetchToday, 5000); // 5-second polling
+    return () => clearInterval(interval);
+  }, [fetchToday]);
 
   // ── After successful camera capture → call API ────────────────────────────
   const handleAttendanceSuccess = async (type: 'checkin' | 'checkout', timestamp: string, photo?: string) => {
