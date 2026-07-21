@@ -13,6 +13,7 @@ export interface AuthUser {
   position?:   string | null;
   department?: string | null;
   phone?:      string | null;
+  status:      'pending' | 'approved' | 'rejected';
 }
 
 interface AuthContextType {
@@ -45,6 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         position:    session.user.position    ?? null,
         department:  session.user.department  ?? null,
         phone:       session.user.phone       ?? null,
+        status:     (session.user.status      ?? 'pending') as 'pending' | 'approved' | 'rejected',
       }
     : null;
 

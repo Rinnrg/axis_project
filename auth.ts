@@ -11,8 +11,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
     // ── Google OAuth ──────────────────────────────────────────────────────
     Google({
-      clientId:     process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      clientId:                          process.env.GOOGLE_CLIENT_ID!,
+      clientSecret:                      process.env.GOOGLE_CLIENT_SECRET!,
+      allowDangerousEmailAccountLinking: true,
     }),
 
     // ── Email + Password ──────────────────────────────────────────────────
@@ -47,30 +48,27 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   ],
 
   callbacks: {
-    // Hanya izinkan Google sign-in jika email sudah ada di database
-    async signIn({ account, profile }) {
-      if (account?.provider === 'google') {
-        const existing = await prisma.user.findUnique({
-          where: { email: profile?.email! },
-        });
-        if (!existing) return '/login?error=EmailNotRegistered';
-      }
+    // Izinkan semua Google sign-in (user baru akan diarahkan ke onboarding jika data belum lengkap)
+    async signIn() {
       return true;
     },
 
     // Tambahkan data custom ke JWT token
     async jwt({ token, user }) {
-      if (user?.email) {
+      const email = user?.email || token?.email;
+      if (email) {
         const dbUser = await prisma.user.findUnique({
-          where: { email: user.email },
-          select: { id: true, role: true, position: true, department: true, phone: true },
+          where: { email },
+          select: { id: true, name: true, role: true, position: true, department: true, phone: true, status: true },
         });
         if (dbUser) {
           token.id         = dbUser.id;
+          token.name       = dbUser.name;
           token.role       = dbUser.role.toLowerCase();
           token.position   = dbUser.position;
           token.department = dbUser.department;
           token.phone      = dbUser.phone;
+          token.status     = dbUser.status;
         }
       }
       return token;
@@ -80,10 +78,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async session({ session, token }) {
       if (session.user) {
         session.user.id         = token.id         as string;
+        session.user.name       = token.name       as string;
         session.user.role       = token.role       as string;
         session.user.position   = token.position   as string | null;
         session.user.department = token.department as string | null;
         session.user.phone      = token.phone      as string | null;
+        session.user.status     = token.status     as string | null;
       }
       return session;
     },

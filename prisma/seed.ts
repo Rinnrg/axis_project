@@ -17,6 +17,7 @@ async function main() {
       position:   'Software Engineer',
       department: 'IT',
       role:       'EMPLOYEE',
+      status:     'APPROVED',
       joinDate:   new Date('2023-01-15'),
     },
   })
@@ -32,6 +33,7 @@ async function main() {
       position:   'Project Manager',
       department: 'Management',
       role:       'EMPLOYEE',
+      status:     'APPROVED',
       joinDate:   new Date('2022-06-10'),
     },
   })
@@ -47,7 +49,24 @@ async function main() {
       position:   'HR Manager',
       department: 'HR',
       role:       'ADMIN',
+      status:     'APPROVED',
       joinDate:   new Date('2021-01-01'),
+    },
+  })
+
+  await prisma.user.upsert({
+    where: { email: 'adminaxis@gmail.com' },
+    update: {},
+    create: {
+      name:       'Admin Axis',
+      email:      'adminaxis@gmail.com',
+      password:   'axis0penhouse',
+      phone:      '081299998888',
+      position:   'Super Admin',
+      department: 'Management',
+      role:       'ADMIN',
+      status:     'APPROVED',
+      joinDate:   new Date('2026-07-21'),
     },
   })
 
@@ -92,8 +111,9 @@ async function main() {
   console.log('✅ Permissions seeded')
   console.log('\n🎉 Database seeded successfully!')
   console.log('\nLogin credentials:')
-  console.log('  Karyawan: budi@example.com / password123')
-  console.log('  Admin:    admin@example.com / admin123')
+  console.log('  Karyawan:    budi@example.com / password123')
+  console.log('  Admin 1:     admin@example.com / admin123')
+  console.log('  Admin Axis:  adminaxis@gmail.com / axis0penhouse')
 }
 
 main()

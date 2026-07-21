@@ -15,6 +15,7 @@ export async function GET() {
         role: true,
         joinDate: true,
         photo: true,
+        status: true,
       },
       orderBy: { name: 'asc' },
     })

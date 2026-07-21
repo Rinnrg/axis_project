@@ -6,14 +6,22 @@ import { AuthProvider, useAuth } from '@/lib/auth-context';
 import { Topbar } from '@/components/topbar';
 
 function DashboardGuard({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.replace('/login');
+    if (!isLoading) {
+      if (!isAuthenticated) {
+        router.replace('/login');
+      } else if (isAuthenticated) {
+        if (!user?.phone) {
+          router.replace('/onboarding');
+        } else if (user?.status !== 'approved') {
+          router.replace('/waiting-approval');
+        }
+      }
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, user, router]);
 
   if (isLoading) {
     return (
