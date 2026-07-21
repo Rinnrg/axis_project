@@ -6,16 +6,61 @@ import { usePathname } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { Menu, X, LogOut, LayoutDashboard, Calendar, FileText, User, ClipboardList, UserCheck } from 'lucide-react';
+import Swal from 'sweetalert2';
 
 export function Topbar() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const { user, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
-  const handleLogout = () => {
-    logout();
-    router.push('/login');
+  const handleProfileClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setProfileOpen(false);
+    setMenuOpen(false);
+    Swal.fire({
+      title: 'Buka Profil?',
+      text: 'Anda akan dialihkan ke halaman profil Anda.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#4f46e5', // indigo-600
+      cancelButtonColor: '#64748b', // slate-500
+      confirmButtonText: 'Ya, buka!',
+      cancelButtonText: 'Batal'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        router.push('/profile');
+      }
+    });
+  };
+
+  const handleLogoutClick = () => {
+    setProfileOpen(false);
+    setMenuOpen(false);
+    Swal.fire({
+      title: 'Apakah Anda yakin?',
+      text: 'Anda akan keluar dari sesi aktif Anda.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444', // red-500
+      cancelButtonColor: '#64748b', // slate-500
+      confirmButtonText: 'Ya, Keluar',
+      cancelButtonText: 'Batal'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        logout();
+        Swal.fire({
+          title: 'Berhasil Keluar!',
+          text: 'Anda telah berhasil log out.',
+          icon: 'success',
+          timer: 1500,
+          showConfirmButton: false
+        }).then(() => {
+          router.push('/login');
+        });
+      }
+    });
   };
 
   const menuItems = user?.role === 'admin'
@@ -51,6 +96,11 @@ export function Topbar() {
             <Link
               key={item.href}
               href={item.href}
+              onClick={(e) => {
+                if (item.href === '/profile') {
+                  handleProfileClick(e);
+                }
+              }}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 isActive(item.href)
                   ? 'bg-indigo-50 text-indigo-700'
@@ -63,23 +113,51 @@ export function Topbar() {
           ))}
         </nav>
 
-        {/* Desktop right */}
-        <div className="hidden md:flex items-center gap-3">
-          <div className="text-right">
-            <p className="text-sm font-semibold text-slate-900 leading-tight">{user?.name}</p>
-            <p className="text-xs text-slate-500">{user?.position}</p>
-          </div>
-          <div className="w-9 h-9 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full
-                           flex items-center justify-center text-white font-bold text-sm">
-            {user?.name?.charAt(0).toUpperCase()}
-          </div>
+        {/* Desktop right (Clickable Profile dropdown) */}
+        <div className="hidden md:flex items-center gap-3 relative">
           <button
-            onClick={handleLogout}
-            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-            aria-label="Logout"
+            onClick={() => setProfileOpen(v => !v)}
+            className="flex items-center gap-3 p-1.5 hover:bg-slate-50 rounded-xl transition-colors text-left"
           >
-            <LogOut className="w-4 h-4" />
+            <div className="text-right">
+              <p className="text-sm font-semibold text-slate-900 leading-tight">{user?.name}</p>
+              <p className="text-xs text-slate-500">{user?.position}</p>
+            </div>
+            <div className="w-9 h-9 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full
+                             flex items-center justify-center text-white font-bold text-sm shadow-sm">
+              {user?.name?.charAt(0).toUpperCase()}
+            </div>
           </button>
+
+          {/* Transparent click backdrop to close dropdown */}
+          {profileOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setProfileOpen(false)} />
+              <div className="absolute right-0 top-full mt-2 w-56 bg-white border border-slate-200 rounded-2xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="px-4 py-2 border-b border-slate-100">
+                  <p className="text-xs text-slate-400">Masuk sebagai</p>
+                  <p className="text-sm font-semibold text-slate-800 truncate">{user?.name}</p>
+                  <p className="text-xs text-slate-500 truncate">{user?.email}</p>
+                </div>
+                <div className="p-1">
+                  <button
+                    onClick={handleProfileClick}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 rounded-xl transition-colors"
+                  >
+                    <User className="w-4 h-4" />
+                    <span>Profil Saya</span>
+                  </button>
+                  <button
+                    onClick={handleLogoutClick}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Keluar</span>
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Mobile right: avatar + hamburger */}
@@ -101,10 +179,18 @@ export function Topbar() {
       {/* Mobile dropdown menu */}
       {menuOpen && (
         <div className="md:hidden border-t border-slate-100 bg-white">
-          {/* User info banner */}
-          <div className="px-4 py-3 bg-indigo-50 border-b border-indigo-100">
-            <p className="text-sm font-semibold text-indigo-900">{user?.name}</p>
-            <p className="text-xs text-indigo-600">{user?.position} • {user?.department}</p>
+          {/* User info banner with sweetalert redirection */}
+          <div className="px-4 py-3 bg-indigo-50 border-b border-indigo-100 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-indigo-900">{user?.name}</p>
+              <p className="text-xs text-indigo-600">{user?.position} • {user?.department}</p>
+            </div>
+            <button
+              onClick={handleProfileClick}
+              className="text-xs font-semibold text-indigo-700 bg-indigo-100 hover:bg-indigo-200 px-2.5 py-1.5 rounded-lg transition-colors"
+            >
+              Profil
+            </button>
           </div>
 
           <div className="px-3 py-2 space-y-0.5">
@@ -112,7 +198,13 @@ export function Topbar() {
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={() => setMenuOpen(false)}
+                onClick={(e) => {
+                  if (item.href === '/profile') {
+                    handleProfileClick(e);
+                  } else {
+                    setMenuOpen(false);
+                  }
+                }}
                 className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors touch-manipulation ${
                   isActive(item.href)
                     ? 'bg-indigo-50 text-indigo-700'
@@ -126,7 +218,7 @@ export function Topbar() {
 
             <div className="border-t border-slate-100 pt-2 mt-2">
               <button
-                onClick={handleLogout}
+                onClick={handleLogoutClick}
                 className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium
                            text-red-600 hover:bg-red-50 transition-colors touch-manipulation"
               >
