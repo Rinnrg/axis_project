@@ -27,6 +27,7 @@ export default function RekapPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [previewImage, setPreviewImage] = useState<{ url: string; title: string } | null>(null);
+  const [loadingPhotoId, setLoadingPhotoId] = useState<string | null>(null);
 
   // Fetch real rekap data from API
   const fetchRekap = useCallback(async () => {
@@ -100,6 +101,38 @@ export default function RekapPage() {
     alert(
       'Fitur export semua data akan diimplementasikan dengan library xlsx'
     );
+  };
+
+  // Handle previewing photo by fetching it on-demand
+  const handlePreviewPhoto = async (id: string, type: 'checkin' | 'checkout' | 'attachment', title: string) => {
+    const loadingKey = `${id}-${type}`;
+    setLoadingPhotoId(loadingKey);
+    try {
+      const res = await fetch(`/api/admin/rekap/photo?id=${id}&type=${type}`);
+      if (!res.ok) throw new Error('Gagal memuat gambar');
+      const data = await res.json();
+      if (data.url) {
+        setPreviewImage({ url: data.url, title });
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Gambar Tidak Ditemukan',
+          text: 'Bukti gambar tidak tersedia atau gagal dimuat.',
+          confirmButtonColor: '#4f46e5',
+          customClass: { popup: 'rounded-2xl' }
+        });
+      }
+    } catch (err: any) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Memuat Gambar',
+        text: err.message || 'Terjadi kesalahan.',
+        confirmButtonColor: '#4f46e5',
+        customClass: { popup: 'rounded-2xl' }
+      });
+    } finally {
+      setLoadingPhotoId(null);
+    }
   };
 
   // Handle Delete Attendance Record
@@ -256,16 +289,35 @@ export default function RekapPage() {
           <div className="grid md:grid-cols-3 gap-4">
             {/* Month Filter */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-slate-700">
-                Bulan
-              </label>
+              <div className="flex justify-between items-center">
+                <label className="block text-sm font-medium text-slate-700">
+                  Bulan
+                </label>
+                <label className="flex items-center gap-1.5 text-xs text-indigo-650 font-bold cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={month === 'all'}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setMonth('all');
+                      } else {
+                        const d = new Date();
+                        setMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+                      }
+                    }}
+                    className="rounded border-slate-350 text-indigo-600 focus:ring-indigo-500 cursor-pointer h-4 w-4"
+                  />
+                  Semua Bulan
+                </label>
+              </div>
               <div className="relative">
                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
                 <input
                   type="month"
-                  value={month}
+                  value={month === 'all' ? '' : month}
+                  disabled={month === 'all'}
                   onChange={(e) => setMonth(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-400 disabled:border-slate-200"
                 />
               </div>
             </div>
@@ -404,43 +456,49 @@ export default function RekapPage() {
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <div className="flex flex-wrap gap-1.5">
-                          {item.checkInPhoto && (
+                          {item.hasCheckInPhoto && (
                             <button
-                              onClick={() => setPreviewImage({
-                                url: item.checkInPhoto,
-                                title: `Bukti Masuk: ${item.employeeName} (${item.date})`
-                              })}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 rounded-lg text-xs font-medium transition-colors cursor-pointer"
+                              disabled={loadingPhotoId === `${item.id}-checkin`}
+                              onClick={() => handlePreviewPhoto(item.id, 'checkin', `Bukti Masuk: ${item.employeeName} (${item.date})`)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 disabled:bg-slate-100 disabled:text-slate-400 rounded-lg text-xs font-medium transition-colors cursor-pointer"
                             >
-                              <Eye className="w-3.5 h-3.5" />
+                              {loadingPhotoId === `${item.id}-checkin` ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <Eye className="w-3.5 h-3.5" />
+                              )}
                               Masuk
                             </button>
                           )}
-                          {item.checkOutPhoto && (
+                          {item.hasCheckOutPhoto && (
                             <button
-                              onClick={() => setPreviewImage({
-                                url: item.checkOutPhoto,
-                                title: `Bukti Pulang: ${item.employeeName} (${item.date})`
-                              })}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 rounded-lg text-xs font-medium transition-colors cursor-pointer"
+                              disabled={loadingPhotoId === `${item.id}-checkout`}
+                              onClick={() => handlePreviewPhoto(item.id, 'checkout', `Bukti Pulang: ${item.employeeName} (${item.date})`)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 disabled:bg-slate-100 disabled:text-slate-400 rounded-lg text-xs font-medium transition-colors cursor-pointer"
                             >
-                              <Eye className="w-3.5 h-3.5" />
+                              {loadingPhotoId === `${item.id}-checkout` ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <Eye className="w-3.5 h-3.5" />
+                              )}
                               Pulang
                             </button>
                           )}
-                          {item.attachment && (
+                          {item.hasAttachment && (
                             <button
-                              onClick={() => setPreviewImage({
-                                url: item.attachment,
-                                title: `Bukti Izin: ${item.employeeName} (${item.date})`
-                              })}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 rounded-lg text-xs font-medium transition-colors cursor-pointer"
+                              disabled={loadingPhotoId === `${item.id}-attachment`}
+                              onClick={() => handlePreviewPhoto(item.id, 'attachment', `Bukti Izin: ${item.employeeName} (${item.date})`)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 disabled:bg-slate-100 disabled:text-slate-400 rounded-lg text-xs font-medium transition-colors cursor-pointer"
                             >
-                              <Eye className="w-3.5 h-3.5" />
+                              {loadingPhotoId === `${item.id}-attachment` ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <Eye className="w-3.5 h-3.5" />
+                              )}
                               Lampiran
                             </button>
                           )}
-                          {!item.checkInPhoto && !item.checkOutPhoto && !item.attachment && (
+                          {!item.hasCheckInPhoto && !item.hasCheckOutPhoto && !item.hasAttachment && (
                             <span className="text-slate-400 text-xs italic">Tidak ada bukti</span>
                           )}
                         </div>
@@ -485,7 +543,7 @@ export default function RekapPage() {
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
           <p className="text-sm text-blue-800 leading-relaxed">
             <strong>Catatan Admin:</strong> Fitur rekap ini membaca data riil dari database. 
-            Gambar bukti kehadiran dikompresi menjadi WebP berukuran ringan untuk mempercepat load page dan menghemat bandwidth.
+            Gambar bukti kehadiran dimuat secara on-demand agar performa pemuatan halaman tetap cepat dan hemat bandwidth.
           </p>
         </div>
       </div>

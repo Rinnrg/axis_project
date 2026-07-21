@@ -15,23 +15,28 @@ function fmtDate(d: Date): string {
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
-    const monthParam = searchParams.get('month') // e.g. "2024-07"
+    const monthParam = searchParams.get('month') // e.g. "2024-07" or "all"
 
-    let year: number
-    let month: number
+    const isAll = monthParam === 'all'
 
-    if (monthParam) {
-      const parts = monthParam.split('-')
-      year = parseInt(parts[0], 10)
-      month = parseInt(parts[1], 10)
-    } else {
-      const now = new Date()
-      year = now.getFullYear()
-      month = now.getMonth() + 1
+    let year = 0
+    let month = 0
+    let startDate = new Date()
+    let endDate = new Date()
+
+    if (!isAll) {
+      if (monthParam) {
+        const parts = monthParam.split('-')
+        year = parseInt(parts[0], 10)
+        month = parseInt(parts[1], 10)
+      } else {
+        const now = new Date()
+        year = now.getFullYear()
+        month = now.getMonth() + 1
+      }
+      startDate = new Date(Date.UTC(year, month - 1, 1))
+      endDate = new Date(Date.UTC(year, month, 1))
     }
-
-    const startDate = new Date(Date.UTC(year, month - 1, 1))
-    const endDate = new Date(Date.UTC(year, month, 1))
 
     // 1. Fetch all employees (users)
     const employees = await prisma.user.findMany({
@@ -45,9 +50,9 @@ export async function GET(req: NextRequest) {
       },
     })
 
-    // 2. Fetch all attendances in the date range
+    // 2. Fetch all attendances (in date range or all)
     const attendances = await prisma.attendance.findMany({
-      where: {
+      where: isAll ? {} : {
         date: {
           gte: startDate,
           lt: endDate,
@@ -62,9 +67,9 @@ export async function GET(req: NextRequest) {
       },
     })
 
-    // 3. Fetch all approved permissions in the date range
+    // 3. Fetch all approved permissions (in date range or all)
     const permissions = await prisma.permission.findMany({
-      where: {
+      where: isAll ? { status: 'APPROVED' } : {
         status: 'APPROVED',
         OR: [
           { startDate: { gte: startDate, lt: endDate } },
@@ -107,9 +112,9 @@ export async function GET(req: NextRequest) {
         checkOutTime: fmtTime(att.checkOutTime),
         status: att.status.toLowerCase(),
         notes: att.notes || '',
-        checkInPhoto: att.checkInPhoto,
-        checkOutPhoto: att.checkOutPhoto,
-        attachment: null,
+        hasCheckInPhoto: !!att.checkInPhoto,
+        hasCheckOutPhoto: !!att.checkOutPhoto,
+        hasAttachment: false,
       })
     }
 
@@ -119,15 +124,16 @@ export async function GET(req: NextRequest) {
       const emp = employeeMap.get(perm.userId)
       if (!emp) continue
 
-      // Calculate the start and end dates within the current month
-      const start = perm.startDate < startDate ? startDate : perm.startDate
-      const end = perm.endDate >= endDate ? new Date(Date.UTC(year, month - 1, 31)) : perm.endDate
+      // Calculate the start and end dates within the current month/range
+      const start = (isAll || perm.startDate > startDate) ? perm.startDate : startDate
+      const end = (isAll || perm.endDate < endDate) ? perm.endDate : new Date(Date.UTC(year, month - 1, 31))
 
       // Loop through dates
       const curr = new Date(start.getTime())
-      // Cap loop just in case to prevent infinite loops
+      // Cap loop just in case to prevent infinite loops (especially in 'all' mode, cap at 100 days per permission)
       let safetyCounter = 0
-      while (curr <= end && safetyCounter < 35) {
+      const limit = isAll ? 100 : 35
+      while (curr <= end && safetyCounter < limit) {
         safetyCounter++
         const dateStr = fmtDate(curr)
 
@@ -149,9 +155,9 @@ export async function GET(req: NextRequest) {
             checkOutTime: null,
             status: 'izin',
             notes: `${perm.type.toUpperCase()}: ${perm.reason}`,
-            checkInPhoto: null,
-            checkOutPhoto: null,
-            attachment: perm.attachment,
+            hasCheckInPhoto: false,
+            hasCheckOutPhoto: false,
+            hasAttachment: !!perm.attachment,
           })
         }
 
