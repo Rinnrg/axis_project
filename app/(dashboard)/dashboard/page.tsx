@@ -25,9 +25,9 @@ export default function DashboardPage() {
   const [todayAtt, setTodayAtt] = useState<TodayAttendance | null>(null);
   const [attLoading, setAttLoading] = useState(true);
 
-  // ── Redirect admin ────────────────────────────────────────────────────────
+  // ── Redirect admin & chief_admin ─────────────────────────────────────────
   useEffect(() => {
-    if (!authLoading && user?.role === 'admin') router.push('/admin');
+    if (!authLoading && (user?.role === 'admin' || user?.role === 'chief_admin')) router.push('/admin');
   }, [user, authLoading, router]);
 
   // ── Fetch today's attendance from API ─────────────────────────────────────

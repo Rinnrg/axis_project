@@ -22,7 +22,7 @@ export async function GET() {
 
     const formatted = users.map(u => ({
       ...u,
-      role: u.role.toLowerCase() as 'employee' | 'admin',
+      role: u.role.toLowerCase() as 'employee' | 'admin' | 'chief_admin',
     }))
 
     return NextResponse.json({ users: formatted })
@@ -91,7 +91,10 @@ export async function PUT(req: NextRequest) {
       )
     }
 
-    const newRole = (position.toLowerCase() === 'admin' || position.toLowerCase() === 'super admin') ? 'ADMIN' : 'EMPLOYEE'
+    const posLower = position.toLowerCase();
+    let newRole: 'ADMIN' | 'CHIEF_ADMIN' | 'EMPLOYEE' = 'EMPLOYEE';
+    if (posLower === 'super admin') newRole = 'ADMIN';
+    else if (posLower === 'chief admin') newRole = 'CHIEF_ADMIN';
 
     const user = await prisma.user.update({
       where: { id: userId },
@@ -116,6 +119,15 @@ export async function DELETE(req: NextRequest) {
 
     if (!userId) {
       return NextResponse.json({ error: 'userId wajib diisi' }, { status: 400 })
+    }
+
+    // Protect admin and chief_admin from deletion
+    const targetUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    })
+    if (targetUser?.role === 'ADMIN' || targetUser?.role === 'CHIEF_ADMIN') {
+      return NextResponse.json({ error: 'Akun admin tidak dapat dihapus' }, { status: 403 })
     }
 
     await prisma.user.delete({

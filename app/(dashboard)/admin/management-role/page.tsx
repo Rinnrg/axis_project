@@ -23,7 +23,7 @@ interface User {
   phone:      string | null;
   position:   string | null;
   department: string | null;
-  role:       'employee' | 'admin';
+  role:       'employee' | 'admin' | 'chief_admin';
   joinDate:   string;
   status:     'PENDING' | 'APPROVED' | 'REJECTED';
 }
@@ -192,7 +192,15 @@ export default function AdminUsersPage() {
       setUsers(prev =>
         prev.map(user =>
           user.id === userId
-            ? { ...user, position, role: (position.toLowerCase() === 'admin' || position.toLowerCase() === 'super admin') ? 'admin' : 'employee' }
+            ? {
+                ...user,
+                position,
+                role: position.toLowerCase() === 'super admin'
+                  ? 'admin'
+                  : position.toLowerCase() === 'chief admin'
+                  ? 'chief_admin'
+                  : 'employee'
+              }
             : user
         )
       );
@@ -398,6 +406,7 @@ export default function AdminUsersPage() {
                         >
                           <option value="" disabled>Pilih Jabatan</option>
                           <option value="super admin">Super Admin</option>
+                          <option value="chief admin">Chief Admin</option>
                           <option value="administrasi">Administrasi</option>
                           <option value="keamanan">Keamanan</option>
                           <option value="trainer">Trainer</option>
@@ -450,7 +459,7 @@ export default function AdminUsersPage() {
                           )}
 
                           {/* Reject Action */}
-                          {(user.status === 'PENDING' || user.status === 'APPROVED') && user.role !== 'admin' && (
+                          {(user.status === 'PENDING' || user.status === 'APPROVED') && user.role !== 'admin' && user.role !== 'chief_admin' && (
                             <button
                               disabled={isUserActioning}
                               onClick={() => handleUserAction(user.id, 'reject')}
@@ -466,20 +475,22 @@ export default function AdminUsersPage() {
                             </button>
                           )}
 
-                          {/* Delete Action */}
-                          <button
-                            disabled={isUserActioning}
-                            onClick={() => handleDeleteUser(user.id)}
-                            className="p-1.5 bg-slate-50 hover:bg-red-50 text-slate-500 hover:text-red-600 border border-slate-200 hover:border-red-200
-                                       rounded-lg transition-colors disabled:opacity-50"
-                            title="Hapus Pengguna"
-                          >
-                            {isUserActioning ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="w-4 h-4" />
-                            )}
-                          </button>
+                          {/* Delete Action — hidden for admin/chief_admin roles */}
+                          {user.role !== 'admin' && user.role !== 'chief_admin' && (
+                            <button
+                              disabled={isUserActioning}
+                              onClick={() => handleDeleteUser(user.id)}
+                              className="p-1.5 bg-slate-50 hover:bg-red-50 text-slate-500 hover:text-red-600 border border-slate-200 hover:border-red-200
+                                         rounded-lg transition-colors disabled:opacity-50"
+                              title="Hapus Pengguna"
+                            >
+                              {isUserActioning ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-4 h-4" />
+                              )}
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

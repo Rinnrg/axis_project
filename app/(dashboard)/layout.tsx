@@ -19,7 +19,13 @@ function DashboardGuard({ children }: { children: React.ReactNode }) {
           router.replace('/login');
         }
       } else if (isAuthenticated) {
-        if (!user?.phone) {
+        // Redirect admin/chief_admin away from user dashboard
+        const isAdminRole = user?.role === 'admin' || user?.role === 'chief_admin';
+        if (isAdminRole) {
+          if (!pathname.startsWith('/admin')) {
+            router.replace('/admin');
+          }
+        } else if (!user?.phone) {
           router.replace('/onboarding');
         } else if (user?.status !== 'approved') {
           router.replace('/waiting-approval');
@@ -34,6 +40,20 @@ function DashboardGuard({ children }: { children: React.ReactNode }) {
         <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
       </div>
     );
+  }
+
+  // For admin/chief_admin accessing admin area: allow if on /admin/* path
+  const isAdminRole = user?.role === 'admin' || user?.role === 'chief_admin';
+  if (isAdminRole) {
+    if (pathname.startsWith('/admin')) {
+      return (
+        <div className="min-h-screen flex flex-col">
+          <Topbar />
+          <main className="flex-1">{children}</main>
+        </div>
+      );
+    }
+    return null; // Will redirect via useEffect above
   }
 
   // Synchronously block rendering of layout/children if not authenticated or not approved

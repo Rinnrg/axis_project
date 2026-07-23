@@ -9,7 +9,7 @@ export interface AuthUser {
   name:        string;
   email:       string;
   image?:      string | null;
-  role:        'employee' | 'admin';
+  role:        'employee' | 'admin' | 'chief_admin';
   position?:   string | null;
   department?: string | null;
   phone?:      string | null;
@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         name:        session.user.name        ?? '',
         email:       session.user.email       ?? '',
         image:       session.user.image       ?? null,
-        role:       (session.user.role        ?? 'employee') as 'employee' | 'admin',
+        role:       (session.user.role        ?? 'employee') as 'employee' | 'admin' | 'chief_admin',
         position:    session.user.position    ?? null,
         department:  session.user.department  ?? null,
         phone:       session.user.phone       ?? null,

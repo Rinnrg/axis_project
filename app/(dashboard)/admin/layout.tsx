@@ -13,7 +13,7 @@ export default function AdminLayout({
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && user?.role !== 'admin') {
+    if (!isLoading && user?.role !== 'admin' && user?.role !== 'chief_admin') {
       router.replace('/dashboard');
     }
   }, [user, isLoading, router]);
@@ -26,7 +26,7 @@ export default function AdminLayout({
     );
   }
 
-  if (user?.role !== 'admin') {
+  if (user?.role !== 'admin' && user?.role !== 'chief_admin') {
     return null;
   }
 

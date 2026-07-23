@@ -4,9 +4,9 @@ import { prisma } from '@/lib/prisma';
 
 export async function POST(req: NextRequest) {
   try {
-    // 1. Authenticate and check if admin
+    // 1. Authenticate and check if admin or chief_admin
     const session = await auth();
-    if (!session || !session.user || session.user.role !== 'admin') {
+    if (!session || !session.user || (session.user.role !== 'admin' && session.user.role !== 'chief_admin')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
