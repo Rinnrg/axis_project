@@ -15,6 +15,7 @@ import {
   AlertCircle,
   Trash2
 } from 'lucide-react';
+import { useAuth } from '@/lib/auth-context';
 
 interface User {
   id:         string;
@@ -29,6 +30,7 @@ interface User {
 }
 
 export default function AdminUsersPage() {
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -175,6 +177,17 @@ export default function AdminUsersPage() {
 
   // Handle Update Position
   const handleUpdatePosition = async (userId: string, position: string) => {
+    const posLower = position.toLowerCase();
+    if (currentUser?.role === 'chief_admin' && (posLower === 'super admin' || posLower === 'chief admin')) {
+      Swal.fire({
+        title: 'Akses Ditolak',
+        text: 'Role Chief Admin tidak dapat memberikan role Super Admin atau Chief Admin.',
+        icon: 'error',
+        confirmButtonColor: '#4f46e5',
+        customClass: { popup: 'rounded-2xl' }
+      });
+      return;
+    }
     setError('');
     try {
       const res = await fetch('/api/users', {
@@ -398,15 +411,25 @@ export default function AdminUsersPage() {
                       <td className="px-6 py-4">
                         <select
                           value={user.position?.toLowerCase() || ''}
+                          disabled={currentUser?.role === 'chief_admin' && (user.role === 'admin' || user.role === 'chief_admin')}
+                          title={
+                            currentUser?.role === 'chief_admin' && (user.role === 'admin' || user.role === 'chief_admin')
+                              ? 'Chief Admin tidak dapat mengubah jabatan Admin/Chief Admin'
+                              : 'Pilih Jabatan'
+                          }
                           onChange={async (e) => {
                             const newPos = e.target.value;
                             await handleUpdatePosition(user.id, newPos);
                           }}
-                          className="px-3 py-1.5 border border-slate-300 bg-white rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 font-semibold cursor-pointer shadow-sm"
+                          className="px-3 py-1.5 border border-slate-300 bg-white rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 font-semibold cursor-pointer shadow-sm disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
                         >
                           <option value="" disabled>Pilih Jabatan</option>
-                          <option value="super admin">Super Admin</option>
-                          <option value="chief admin">Chief Admin</option>
+                          {currentUser?.role === 'admin' && (
+                            <>
+                              <option value="super admin">Super Admin</option>
+                              <option value="chief admin">Chief Admin</option>
+                            </>
+                          )}
                           <option value="administrasi">Administrasi</option>
                           <option value="keamanan">Keamanan</option>
                           <option value="trainer">Trainer</option>
@@ -459,7 +482,7 @@ export default function AdminUsersPage() {
                           )}
 
                           {/* Reject Action */}
-                          {(user.status === 'PENDING' || user.status === 'APPROVED') && user.role !== 'admin' && user.role !== 'chief_admin' && (
+                          {(user.status === 'PENDING' || user.status === 'APPROVED') && user.role !== 'admin' && (
                             <button
                               disabled={isUserActioning}
                               onClick={() => handleUserAction(user.id, 'reject')}
@@ -475,8 +498,8 @@ export default function AdminUsersPage() {
                             </button>
                           )}
 
-                          {/* Delete Action — hidden for admin/chief_admin roles */}
-                          {user.role !== 'admin' && user.role !== 'chief_admin' && (
+                          {/* Delete Action — Super Admin can delete anyone except Super Admin; Chief Admin cannot delete admins */}
+                          {user.role !== 'admin' && (currentUser?.role === 'admin' || user.role !== 'chief_admin') && (
                             <button
                               disabled={isUserActioning}
                               onClick={() => handleDeleteUser(user.id)}

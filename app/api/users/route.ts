@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { auth } from '@/auth'
 
 // ─── GET /api/users  (admin: list all users) ─────────────────────────────────
 export async function GET() {
@@ -78,9 +79,14 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// ─── PUT /api/users  (admin: update user position & role) ─────────────────────
+// ─── PUT /api/users  (admin/chief_admin: update user position & role) ─────────
 export async function PUT(req: NextRequest) {
   try {
+    const session = await auth();
+    if (!session || !session.user || (session.user.role !== 'admin' && session.user.role !== 'chief_admin')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const body = await req.json()
     const { userId, position } = body
 
@@ -92,6 +98,30 @@ export async function PUT(req: NextRequest) {
     }
 
     const posLower = position.toLowerCase();
+
+    // Chief Admin restrictions:
+    if (session.user.role === 'chief_admin') {
+      // 1. Cannot assign Super Admin or Chief Admin roles
+      if (posLower === 'super admin' || posLower === 'chief admin') {
+        return NextResponse.json(
+          { error: 'Chief Admin tidak dapat memberikan role Super Admin atau Chief Admin' },
+          { status: 403 }
+        );
+      }
+
+      // 2. Cannot modify position of existing Super Admin or Chief Admin
+      const targetUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { role: true },
+      });
+      if (targetUser?.role === 'ADMIN' || targetUser?.role === 'CHIEF_ADMIN') {
+        return NextResponse.json(
+          { error: 'Chief Admin tidak dapat mengubah jabatan Super Admin atau Chief Admin' },
+          { status: 403 }
+        );
+      }
+    }
+
     let newRole: 'ADMIN' | 'CHIEF_ADMIN' | 'EMPLOYEE' = 'EMPLOYEE';
     if (posLower === 'super admin') newRole = 'ADMIN';
     else if (posLower === 'chief admin') newRole = 'CHIEF_ADMIN';
@@ -111,9 +141,14 @@ export async function PUT(req: NextRequest) {
   }
 }
 
-// ─── DELETE /api/users?userId=xxx  (admin: delete user) ────────────────────────
+// ─── DELETE /api/users?userId=xxx  (admin/chief_admin: delete user) ───────────
 export async function DELETE(req: NextRequest) {
   try {
+    const session = await auth();
+    if (!session || !session.user || (session.user.role !== 'admin' && session.user.role !== 'chief_admin')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const { searchParams } = new URL(req.url)
     const userId = searchParams.get('userId')
 
@@ -121,13 +156,19 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'userId wajib diisi' }, { status: 400 })
     }
 
-    // Protect admin and chief_admin from deletion
     const targetUser = await prisma.user.findUnique({
       where: { id: userId },
       select: { role: true },
     })
-    if (targetUser?.role === 'ADMIN' || targetUser?.role === 'CHIEF_ADMIN') {
-      return NextResponse.json({ error: 'Akun admin tidak dapat dihapus' }, { status: 403 })
+
+    // Super Admin role (ADMIN) can NEVER be deleted
+    if (targetUser?.role === 'ADMIN') {
+      return NextResponse.json({ error: 'Akun Super Admin tidak dapat dihapus' }, { status: 403 })
+    }
+
+    // Chief Admin role can only be deleted by Super Admin (admin), not by another Chief Admin
+    if (targetUser?.role === 'CHIEF_ADMIN' && session.user.role !== 'admin') {
+      return NextResponse.json({ error: 'Chief Admin tidak dapat menghapus akun Chief Admin' }, { status: 403 })
     }
 
     await prisma.user.delete({
