@@ -7,7 +7,7 @@ import { ClockWidget } from '@/components/clock-widget';
 import { AttendanceCamera } from '@/components/attendance-camera';
 import Swal from 'sweetalert2';
 import {
-  CheckCircle, Clock, AlertCircle, FileText, Calendar, LogIn, LogOut,
+  CheckCircle, Clock, AlertCircle, FileText, Calendar, LogIn, LogOut, Megaphone,
 } from 'lucide-react';
 
 interface TodayAttendance {
@@ -268,6 +268,26 @@ export default function DashboardPage() {
             </div>
           </a>
         </div>
+
+        {/* Report Card (Tepat di bawah Riwayat & Izin) */}
+        <a
+          href="/report"
+          className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all p-4 sm:p-5 md:p-6
+                     flex items-center justify-between group active:scale-[0.98] touch-manipulation border border-rose-100/60"
+        >
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 bg-rose-50 rounded-xl flex items-center justify-center shrink-0">
+              <Megaphone className="w-5 h-5 text-rose-600 group-hover:scale-110 transition-transform" />
+            </div>
+            <div className="text-left min-w-0">
+              <h3 className="font-semibold text-slate-900 text-sm sm:text-base truncate">Laporan Club House</h3>
+              <p className="text-xs sm:text-sm text-slate-500">Laporkan komplain atau masalah fasilitas</p>
+            </div>
+          </div>
+          <span className="text-xs font-semibold text-rose-600 bg-rose-50 group-hover:bg-rose-100 px-3 py-1.5 rounded-lg transition-colors shrink-0 hidden xs:inline sm:inline">
+            Buat Laporan →
+          </span>
+        </a>
 
       </div>
 

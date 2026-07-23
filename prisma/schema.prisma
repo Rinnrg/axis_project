@@ -31,6 +31,7 @@ model User {
   accounts    Account[]
   attendances Attendance[]
   permissions Permission[]
+  reports     Report[]
 
   @@map("users")
 }
@@ -137,4 +138,49 @@ enum PermissionStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+// ============================================================
+// REPORT (Laporan / Komplain Club House)
+// ============================================================
+model Report {
+  id          String         @id @default(cuid())
+  userId      String
+  title       String
+  category    ReportCategory
+  description String         @db.Text
+  location    String?
+  priority    ReportPriority @default(MEDIUM)
+  status      ReportStatus   @default(OPEN)
+  adminNote   String?        @db.Text
+  attachment  String?        // Supabase Storage URL or base64
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("reports")
+}
+
+enum ReportCategory {
+  FASILITAS
+  KEBERSIHAN
+  KEAMANAN
+  PERALATAN
+  LAYANAN
+  LAINNYA
+}
+
+enum ReportPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ReportStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
 }

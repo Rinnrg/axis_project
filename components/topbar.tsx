@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { Menu, X, LogOut, LayoutDashboard, Calendar, FileText, User, ClipboardList, UserCheck } from 'lucide-react';
+import { Menu, X, LogOut, LayoutDashboard, Calendar, FileText, User, ClipboardList, UserCheck, Megaphone } from 'lucide-react';
 import Swal from 'sweetalert2';
 
 export function Topbar() {
@@ -48,11 +48,13 @@ export function Topbar() {
         { label: 'Dashboard',       href: '/admin',                 icon: LayoutDashboard },
         { label: 'Management Role', href: '/admin/management-role', icon: UserCheck },
         { label: 'Rekap Presensi',  href: '/admin/rekap',           icon: ClipboardList },
+        { label: 'Report',          href: '/admin/report',          icon: Megaphone },
       ]
     : [
         { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
         { label: 'Riwayat',   href: '/riwayat',   icon: Calendar },
         { label: 'Izin',      href: '/izin',       icon: FileText },
+        { label: 'Report',    href: '/report',     icon: Megaphone },
       ];
 
   const isActive = (href: string) => pathname === href;
