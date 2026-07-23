@@ -52,7 +52,7 @@ export default function RekapPage() {
 
   useEffect(() => {
     fetchRekap();
-    const interval = setInterval(fetchRekap, 5 * 60 * 60 * 1000); // 5-hour polling
+    const interval = setInterval(fetchRekap, 2 * 60 * 60 * 1000); // 2-hour polling
     return () => clearInterval(interval);
   }, [fetchRekap]);
 
