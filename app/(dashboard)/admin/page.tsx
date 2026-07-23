@@ -17,7 +17,10 @@ import {
   ExternalLink,
   ChevronRight,
   RefreshCw,
-  Info
+  Info,
+  ChevronDown,
+  ChevronUp,
+  BarChart2,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -77,6 +80,7 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [actioningId, setActioningId] = useState<string | null>(null);
+  const [showStats, setShowStats] = useState(false); // hidden by default on mobile
 
   const fetchDashboardData = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -248,48 +252,69 @@ export default function AdminDashboardPage() {
 
       {/* Stats Cards Grid */}
       {stats && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Total Employees */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
-              <Users className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs text-slate-500 font-medium">Total Karyawan Aktif</p>
-              <p className="text-2xl font-bold text-slate-950 mt-0.5">{stats.totalEmployees}</p>
-            </div>
+        <div>
+          {/* Mobile toggle button */}
+          <div className="sm:hidden mb-3">
+            <button
+              onClick={() => setShowStats(v => !v)}
+              className="w-full flex items-center justify-between px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-colors shadow-sm"
+            >
+              <div className="flex items-center gap-2">
+                <BarChart2 className="w-4 h-4 text-indigo-500" />
+                <span>{showStats ? 'Sembunyikan Statistik' : 'Tampilkan Statistik'}</span>
+              </div>
+              {showStats
+                ? <ChevronUp className="w-4 h-4 text-slate-400" />
+                : <ChevronDown className="w-4 h-4 text-slate-400" />}
+            </button>
           </div>
 
-          {/* Present Today */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
-              <UserCheck className="w-6 h-6" />
+          {/* Cards: always visible on sm+, togglable on mobile */}
+          <div className={`grid grid-cols-2 lg:grid-cols-4 gap-4 ${
+            showStats ? 'block' : 'hidden sm:grid'
+          }`}>
+            {/* Total Employees */}
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
+                <Users className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 font-medium">Total Karyawan Aktif</p>
+                <p className="text-2xl font-bold text-slate-950 mt-0.5">{stats.totalEmployees}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs text-slate-500 font-medium">Hadir Hari Ini</p>
-              <p className="text-2xl font-bold text-slate-950 mt-0.5">{stats.presentToday}</p>
-            </div>
-          </div>
 
-          {/* Late Today */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 shrink-0">
-              <Clock className="w-6 h-6" />
+            {/* Present Today */}
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
+                <UserCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 font-medium">Hadir Hari Ini</p>
+                <p className="text-2xl font-bold text-slate-950 mt-0.5">{stats.presentToday}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs text-slate-500 font-medium">Terlambat Hari Ini</p>
-              <p className="text-2xl font-bold text-slate-950 mt-0.5">{stats.lateToday}</p>
-            </div>
-          </div>
 
-          {/* Leave Today */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
-              <FileText className="w-6 h-6" />
+            {/* Late Today */}
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 shrink-0">
+                <Clock className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 font-medium">Terlambat Hari Ini</p>
+                <p className="text-2xl font-bold text-slate-950 mt-0.5">{stats.lateToday}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs text-slate-500 font-medium">Izin Hari Ini</p>
-              <p className="text-2xl font-bold text-slate-950 mt-0.5">{stats.leaveToday}</p>
+
+            {/* Leave Today */}
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
+                <FileText className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 font-medium">Izin Hari Ini</p>
+                <p className="text-2xl font-bold text-slate-950 mt-0.5">{stats.leaveToday}</p>
+              </div>
             </div>
           </div>
         </div>

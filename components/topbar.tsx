@@ -43,7 +43,7 @@ export function Topbar() {
     });
   };
 
-  const menuItems = user?.role === 'admin'
+  const menuItems = (user?.role === 'admin' || user?.role === 'chief_admin')
     ? [
         { label: 'Dashboard',       href: '/admin',                 icon: LayoutDashboard },
         { label: 'Management Role', href: '/admin/management-role', icon: UserCheck },
