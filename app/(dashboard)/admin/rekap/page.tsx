@@ -87,7 +87,8 @@ export default function RekapPage() {
     total: filteredAttendance.length,
     hadir: filteredAttendance.filter((a) => a.status === 'hadir').length,
     telat: filteredAttendance.filter((a) => a.status === 'telat').length,
-    izin: filteredAttendance.filter((a) => a.status === 'izin').length,
+    izinApproved: filteredAttendance.filter((a) => a.status === 'izin' && a.permissionStatus === 'APPROVED').length,
+    izinRejected: filteredAttendance.filter((a) => a.status === 'izin' && a.permissionStatus === 'REJECTED').length,
     alpha: filteredAttendance.filter((a) => a.status === 'alpha').length,
   };
 
@@ -238,8 +239,10 @@ export default function RekapPage() {
     }
   };
 
-  const getStatusBadge = (status: string, permissionType?: string | null) => {
+  const getStatusBadge = (status: string, permissionType?: string | null, permissionStatus?: string | null) => {
     if (status === 'izin' && permissionType) {
+      // Rejected permission — gray strikethrough style
+      if (permissionStatus === 'REJECTED') return 'bg-slate-100 text-slate-500 border border-slate-300 line-through';
       if (permissionType === 'CUTI') return 'bg-violet-100 text-violet-700 border border-violet-200';
       if (permissionType === 'SAKIT') return 'bg-rose-100 text-rose-700 border border-rose-200';
       return 'bg-blue-100 text-blue-700 border border-blue-200';
@@ -253,11 +256,12 @@ export default function RekapPage() {
     return styles[status] || styles.alpha;
   };
 
-  const getStatusLabel = (status: string, permissionType?: string | null) => {
+  const getStatusLabel = (status: string, permissionType?: string | null, permissionStatus?: string | null) => {
     if (status === 'izin' && permissionType) {
-      if (permissionType === 'CUTI') return '🌴 Cuti';
-      if (permissionType === 'SAKIT') return '🤒 Sakit';
-      return 'ℹ Izin';
+      const rejected = permissionStatus === 'REJECTED';
+      if (permissionType === 'CUTI') return rejected ? '✗ Cuti (Ditolak)' : '🌴 Cuti';
+      if (permissionType === 'SAKIT') return rejected ? '✗ Sakit (Ditolak)' : '🤒 Sakit';
+      return rejected ? '✗ Izin (Ditolak)' : 'ℹ Izin';
     }
     const labels: Record<string, string> = {
       hadir: '✓ Hadir',
@@ -274,6 +278,7 @@ export default function RekapPage() {
       emerald: 'bg-emerald-50 border-emerald-200 hover:bg-emerald-50/80',
       amber: 'bg-amber-50 border-amber-200 hover:bg-amber-50/80',
       blue: 'bg-blue-50 border-blue-200 hover:bg-blue-50/80',
+      rose: 'bg-rose-50 border-rose-200 hover:bg-rose-50/80',
       red: 'bg-red-50 border-red-200 hover:bg-red-50/80',
     };
     return styles[color] || styles.slate;
@@ -285,6 +290,7 @@ export default function RekapPage() {
       emerald: 'text-emerald-900',
       amber: 'text-amber-900',
       blue: 'text-blue-900',
+      rose: 'text-rose-900',
       red: 'text-red-900',
     };
     return styles[color] || styles.slate;
@@ -325,10 +331,10 @@ export default function RekapPage() {
         </div>
 
         {/* Statistics */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {[
             {
-              label: 'Total Presensi',
+              label: 'Total',
               value: stats.total,
               color: 'slate',
             },
@@ -338,7 +344,8 @@ export default function RekapPage() {
               color: 'emerald',
             },
             { label: 'Telat', value: stats.telat, color: 'amber' },
-            { label: 'Izin', value: stats.izin, color: 'blue' },
+            { label: 'Izin Disetujui', value: stats.izinApproved, color: 'blue' },
+            { label: 'Izin Ditolak', value: stats.izinRejected, color: 'rose' },
             { label: 'Alpha', value: stats.alpha, color: 'red' },
           ].map((stat) => (
             <div
@@ -498,15 +505,23 @@ export default function RekapPage() {
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <span
-                          className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadge(item.status, item.permissionType)}`}
+                          className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadge(item.status, item.permissionType, item.permissionStatus)}`}
                         >
-                          {getStatusLabel(item.status, item.permissionType)}
+                          {getStatusLabel(item.status, item.permissionType, item.permissionStatus)}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-600 max-w-[180px]">
                         {item.permissionType ? (
                           <div>
-                            <span className="block font-bold text-[10px] uppercase tracking-wider mb-0.5 text-slate-400">{item.permissionType}</span>
+                            <div className="flex items-center gap-1.5 mb-0.5">
+                              <span className="block font-bold text-[10px] uppercase tracking-wider text-slate-400">{item.permissionType}</span>
+                              {item.permissionStatus === 'REJECTED' && (
+                                <span className="px-1.5 py-0.5 bg-red-100 text-red-600 rounded text-[9px] font-bold uppercase">Ditolak</span>
+                              )}
+                              {item.permissionStatus === 'APPROVED' && (
+                                <span className="px-1.5 py-0.5 bg-green-100 text-green-600 rounded text-[9px] font-bold uppercase">Disetujui</span>
+                              )}
+                            </div>
                             <span className="text-xs leading-relaxed line-clamp-2">{item.permissionReason || '-'}</span>
                           </div>
                         ) : (

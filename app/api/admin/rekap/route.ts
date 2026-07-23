@@ -67,19 +67,21 @@ export async function GET(req: NextRequest) {
       },
     })
 
-    // 3. Fetch all approved permissions (in date range or all)
+    // 3. Fetch all processed permissions (APPROVED + REJECTED) in date range or all
     const permissions = await prisma.permission.findMany({
-      where: isAll ? { status: 'APPROVED' } : {
-        status: 'APPROVED',
-        OR: [
-          { startDate: { gte: startDate, lt: endDate } },
-          { endDate: { gte: startDate, lt: endDate } },
-          {
-            startDate: { lte: startDate },
-            endDate: { gte: endDate },
+      where: isAll
+        ? { status: { in: ['APPROVED', 'REJECTED'] } }
+        : {
+            status: { in: ['APPROVED', 'REJECTED'] },
+            OR: [
+              { startDate: { gte: startDate, lt: endDate } },
+              { endDate: { gte: startDate, lt: endDate } },
+              {
+                startDate: { lte: startDate },
+                endDate: { gte: endDate },
+              },
+            ],
           },
-        ],
-      },
       include: {
         user: {
           select: {
@@ -151,6 +153,7 @@ export async function GET(req: NextRequest) {
           status: 'izin',
           notes: `${perm.type.toUpperCase()}: ${perm.reason}`,
           permissionType: perm.type.toUpperCase(),  // IZIN | CUTI | SAKIT
+          permissionStatus: perm.status,            // APPROVED | REJECTED
           permissionReason: perm.reason,
           hasCheckInPhoto: false,
           hasCheckOutPhoto: false,
