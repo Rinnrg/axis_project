@@ -2,11 +2,82 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { Menu, X, LogOut, LayoutDashboard, Calendar, FileText, User, ClipboardList, UserCheck, Megaphone } from 'lucide-react';
 import Swal from 'sweetalert2';
+import { motion, AnimatePresence } from 'framer-motion';
+
+// Animation variants inspired by navigation-menu-01
+const menuVariants = {
+  initial: {
+    height: 0,
+    opacity: 0,
+  },
+  animate: {
+    height: 'auto',
+    opacity: 1,
+    transition: {
+      duration: 0.45,
+      type: 'tween',
+      ease: [0.76, 0, 0.24, 1],
+    },
+  },
+  exit: {
+    height: 0,
+    opacity: 0,
+    transition: {
+      duration: 0.35,
+      type: 'tween',
+      ease: [0.76, 0, 0.24, 1],
+    },
+  },
+};
+
+const perspectiveItem = {
+  initial: {
+    opacity: 0,
+    rotateX: 90,
+    translateY: 30,
+    translateX: -10,
+  },
+  enter: (i: number) => ({
+    opacity: 1,
+    rotateX: 0,
+    translateY: 0,
+    translateX: 0,
+    transition: {
+      duration: 0.5,
+      delay: 0.08 + i * 0.07,
+      ease: [0.215, 0.61, 0.355, 1],
+      opacity: { duration: 0.3 },
+    },
+  }),
+  exit: {
+    opacity: 0,
+    transition: { duration: 0.25, type: 'linear', ease: [0.76, 0, 0.24, 1] },
+  },
+};
+
+const slideInFooter = {
+  initial: {
+    opacity: 0,
+    y: 15,
+  },
+  enter: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.4,
+      delay: 0.2 + i * 0.07,
+      ease: [0.215, 0.61, 0.355, 1],
+    },
+  }),
+  exit: {
+    opacity: 0,
+    transition: { duration: 0.25, type: 'tween', ease: 'easeInOut' },
+  },
+};
 
 export function Topbar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -26,7 +97,8 @@ export function Topbar() {
       confirmButtonColor: '#ef4444',
       cancelButtonColor: '#64748b',
       confirmButtonText: 'Ya, Keluar',
-      cancelButtonText: 'Batal'
+      cancelButtonText: 'Batal',
+      customClass: { popup: 'rounded-2xl' }
     }).then((result) => {
       if (result.isConfirmed) {
         logout();
@@ -35,7 +107,8 @@ export function Topbar() {
           text: 'Anda telah berhasil log out.',
           icon: 'success',
           timer: 1500,
-          showConfirmButton: false
+          showConfirmButton: false,
+          customClass: { popup: 'rounded-2xl' }
         }).then(() => {
           router.push('/login');
         });
@@ -95,7 +168,7 @@ export function Topbar() {
         <div className="hidden md:flex items-center gap-3 relative">
           <button
             onClick={() => setProfileOpen(v => !v)}
-            className="flex items-center gap-3 p-1.5 hover:bg-slate-50 rounded-xl transition-colors text-left"
+            className="flex items-center gap-3 p-1.5 hover:bg-slate-50 rounded-xl transition-colors text-left cursor-pointer"
           >
             <div className="text-right">
               <p className="text-sm font-semibold text-slate-900 leading-tight">{user?.name}</p>
@@ -115,7 +188,7 @@ export function Topbar() {
             )}
           </button>
 
-          {/* Dropdown */}
+          {/* Profile Dropdown */}
           {profileOpen && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setProfileOpen(false)} />
@@ -136,7 +209,7 @@ export function Topbar() {
                   </Link>
                   <button
                     onClick={handleLogoutClick}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
                   >
                     <LogOut className="w-4 h-4" />
                     <span>Keluar</span>
@@ -163,7 +236,7 @@ export function Topbar() {
           )}
           <button
             onClick={() => setMenuOpen(v => !v)}
-            className="p-2 hover:bg-slate-100 rounded-lg transition-colors touch-manipulation"
+            className="p-2 hover:bg-slate-100 rounded-lg transition-colors touch-manipulation cursor-pointer"
             aria-label={menuOpen ? 'Tutup menu' : 'Buka menu'}
           >
             {menuOpen ? <X className="w-5 h-5 text-slate-700" /> : <Menu className="w-5 h-5 text-slate-700" />}
@@ -171,54 +244,85 @@ export function Topbar() {
         </div>
       </div>
 
-      {/* Mobile dropdown menu */}
-      {menuOpen && (
-        <div className="md:hidden border-t border-slate-100 bg-white">
-          {/* User info banner */}
-          <div className="px-4 py-3 bg-indigo-50 border-b border-indigo-100 flex items-center justify-between">
-            <div>
-              <p className="text-sm font-semibold text-indigo-900">{user?.name}</p>
-              <p className="text-xs text-indigo-600">{user?.position} • {user?.department}</p>
-            </div>
-            <Link
-              href="/profile"
-              onClick={() => setMenuOpen(false)}
-              className="text-xs font-semibold text-indigo-700 bg-indigo-100 hover:bg-indigo-200 px-2.5 py-1.5 rounded-lg transition-colors"
+      {/* Mobile Animated Dropdown Menu (using navigation-menu-01 animation variants) */}
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.div
+            variants={menuVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            className="md:hidden overflow-hidden border-t border-slate-100 bg-white shadow-lg"
+          >
+            {/* User info banner */}
+            <motion.div
+              variants={slideInFooter}
+              custom={0}
+              initial="initial"
+              animate="enter"
+              exit="exit"
+              className="px-4 py-3 bg-indigo-50 border-b border-indigo-100 flex items-center justify-between"
             >
-              Profil
-            </Link>
-          </div>
-
-          <div className="px-3 py-2 space-y-0.5">
-            {menuItems.map(item => (
+              <div>
+                <p className="text-sm font-semibold text-indigo-900">{user?.name}</p>
+                <p className="text-xs text-indigo-600">{user?.position} • {user?.department}</p>
+              </div>
               <Link
-                key={item.href}
-                href={item.href}
+                href="/profile"
                 onClick={() => setMenuOpen(false)}
-                className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors touch-manipulation ${
-                  isActive(item.href)
-                    ? 'bg-indigo-50 text-indigo-700'
-                    : 'text-slate-700 hover:bg-slate-100'
-                }`}
+                className="text-xs font-semibold text-indigo-700 bg-indigo-100 hover:bg-indigo-200 px-2.5 py-1.5 rounded-lg transition-colors"
               >
-                <item.icon className="w-5 h-5 shrink-0" />
-                {item.label}
+                Profil
               </Link>
-            ))}
+            </motion.div>
 
-            <div className="border-t border-slate-100 pt-2 mt-2">
-              <button
-                onClick={handleLogoutClick}
-                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium
-                           text-red-600 hover:bg-red-50 transition-colors touch-manipulation"
+            <div className="px-3 py-3 space-y-1">
+              {menuItems.map((item, i) => (
+                <div key={item.href} className="perspective-1000">
+                  <motion.div
+                    custom={i}
+                    variants={perspectiveItem}
+                    initial="initial"
+                    animate="enter"
+                    exit="exit"
+                  >
+                    <Link
+                      href={item.href}
+                      onClick={() => setMenuOpen(false)}
+                      className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors touch-manipulation ${
+                        isActive(item.href)
+                          ? 'bg-indigo-50 text-indigo-700 font-semibold'
+                          : 'text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      <item.icon className="w-5 h-5 shrink-0" />
+                      {item.label}
+                    </Link>
+                  </motion.div>
+                </div>
+              ))}
+
+              <motion.div
+                variants={slideInFooter}
+                custom={1}
+                initial="initial"
+                animate="enter"
+                exit="exit"
+                className="border-t border-slate-100 pt-2 mt-2"
               >
-                <LogOut className="w-5 h-5 shrink-0" />
-                Keluar
-              </button>
+                <button
+                  onClick={handleLogoutClick}
+                  className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium
+                             text-red-600 hover:bg-red-50 transition-colors touch-manipulation cursor-pointer"
+                >
+                  <LogOut className="w-5 h-5 shrink-0" />
+                  Keluar
+                </button>
+              </motion.div>
             </div>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
