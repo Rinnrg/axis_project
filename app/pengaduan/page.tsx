@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import Swal from 'sweetalert2';
 import {
@@ -63,20 +64,9 @@ interface PublicReportItem {
 
 export default function PublicReportPage() {
   const router = useRouter();
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated } = useAuth();
 
   const [activeTab, setActiveTab] = useState<'create' | 'history'>('create');
-
-  // Redirect authenticated internal users (employees & admins) to internal report page
-  useEffect(() => {
-    if (!isLoading && isAuthenticated && user) {
-      if (user.role === 'admin' || user.role === 'chief_admin') {
-        router.replace('/admin/report');
-      } else {
-        router.replace('/report');
-      }
-    }
-  }, [user, isAuthenticated, isLoading, router]);
 
   // Submit Form States
   const [submitting, setSubmitting] = useState(false);
@@ -254,18 +244,27 @@ export default function PublicReportPage() {
     setSearched(false);
   };
 
-  if (isAuthenticated && user) {
-    return (
-      <div className="min-h-screen bg-slate-900 text-white flex flex-col items-center justify-center p-4">
-        <Loader2 className="w-8 h-8 animate-spin text-indigo-400 mb-3" />
-        <p className="text-sm font-medium text-slate-300">Mengalihkan ke Halaman Laporan Karyawan...</p>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-slate-100 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto space-y-6">
+
+        {/* Authenticated Internal User Banner */}
+        {isAuthenticated && user && (
+          <div className="bg-indigo-900/50 border border-indigo-700/60 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-indigo-200 shadow-lg">
+            <div className="flex items-center gap-2">
+              <User className="w-4 h-4 text-indigo-400 shrink-0" />
+              <span>
+                Anda terhubung sebagai <strong className="text-white">{user.name}</strong> ({user.role}).
+              </span>
+            </div>
+            <Link
+              href={user.role === 'admin' || user.role === 'chief_admin' ? '/admin/report' : '/report'}
+              className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition-all shrink-0 cursor-pointer shadow-md"
+            >
+              Buka Laporan Internal →
+            </Link>
+          </div>
+        )}
 
 
         {/* Mode Toggle Tabs */}

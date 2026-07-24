@@ -6,22 +6,41 @@ import { prisma } from '@/lib/prisma';
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const query = searchParams.get('query')?.trim() || searchParams.get('phone')?.trim();
+    const rawQuery = searchParams.get('query')?.trim() || searchParams.get('phone')?.trim() || '';
 
-    if (!query) {
+    if (!rawQuery) {
       return NextResponse.json(
         { error: 'Nomor WhatsApp/Telepon atau ID Tiket wajib diisi' },
         { status: 400 }
       );
     }
 
+    // Clean digits & alternate phone format (e.g. 0812xxx <-> 62812xxx)
+    const cleanDigits = rawQuery.replace(/[^0-9]/g, '');
+    let alternatePhone = '';
+    if (cleanDigits.startsWith('0')) {
+      alternatePhone = '62' + cleanDigits.slice(1);
+    } else if (cleanDigits.startsWith('62')) {
+      alternatePhone = '0' + cleanDigits.slice(2);
+    }
+
+    const orConditions: any[] = [
+      { reporterPhone: { contains: rawQuery, mode: 'insensitive' } },
+      { reporterEmail: { contains: rawQuery, mode: 'insensitive' } },
+      { id: { equals: rawQuery } },
+      { title: { contains: rawQuery, mode: 'insensitive' } },
+    ];
+
+    if (cleanDigits.length >= 3) {
+      orConditions.push({ reporterPhone: { contains: cleanDigits, mode: 'insensitive' } });
+    }
+    if (alternatePhone.length >= 3) {
+      orConditions.push({ reporterPhone: { contains: alternatePhone, mode: 'insensitive' } });
+    }
+
     const reports = await prisma.report.findMany({
       where: {
-        OR: [
-          { reporterPhone: { contains: query } },
-          { reporterEmail: { contains: query } },
-          { id: { equals: query } },
-        ],
+        OR: orConditions,
       },
       orderBy: { createdAt: 'desc' },
       select: {
@@ -42,7 +61,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: true, count: reports.length, reports });
   } catch (err: any) {
     console.error('[GET /api/reports/public]', err);
-    return NextResponse.json({ error: 'Terjadi kesalahan pada server' }, { status: 500 });
+    return NextResponse.json({ error: 'Terjadi kesalahan pada server saat mencari laporan' }, { status: 500 });
   }
 }
 
