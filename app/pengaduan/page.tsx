@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/auth-context';
 import Swal from 'sweetalert2';
 import {
   Megaphone,
@@ -60,8 +62,22 @@ interface PublicReportItem {
 }
 
 export default function PublicReportPage() {
+  const router = useRouter();
+  const { user, isAuthenticated, isLoading } = useAuth();
+
   const [activeTab, setActiveTab] = useState<'create' | 'history'>('create');
-  
+
+  // Redirect authenticated internal users (employees & admins) to internal report page
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && user) {
+      if (user.role === 'admin' || user.role === 'chief_admin') {
+        router.replace('/admin/report');
+      } else {
+        router.replace('/report');
+      }
+    }
+  }, [user, isAuthenticated, isLoading, router]);
+
   // Submit Form States
   const [submitting, setSubmitting] = useState(false);
   const [successData, setSuccessData] = useState<{ id: string } | null>(null);
@@ -206,7 +222,7 @@ export default function PublicReportPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Gagal mengambil riwayat');
       setHistoryReports(data.reports || []);
-      
+
       // Save phone if valid query
       if (query.trim().length >= 4) {
         localStorage.setItem('customer_report_phone', query.trim());
@@ -238,45 +254,38 @@ export default function PublicReportPage() {
     setSearched(false);
   };
 
+  if (isAuthenticated && user) {
+    return (
+      <div className="min-h-screen bg-slate-900 text-white flex flex-col items-center justify-center p-4">
+        <Loader2 className="w-8 h-8 animate-spin text-indigo-400 mb-3" />
+        <p className="text-sm font-medium text-slate-300">Mengalihkan ke Halaman Laporan Karyawan...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-slate-100 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto space-y-6">
-        
-        {/* Brand Header */}
-        <div className="text-center space-y-3">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold tracking-wide">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-            Layanan Pengaduan Pelanggan & Pengunjung
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight flex items-center justify-center gap-3">
-            <Building2 className="w-8 h-8 text-indigo-400" />
-            Form & Riwayat Laporan Pelanggan
-          </h1>
-          <p className="text-slate-400 text-sm sm:text-base max-w-xl mx-auto">
-            Sampaikan masukan atau keluhan Anda, dan cek status tindak lanjut pengaduan Anda kapan saja.
-          </p>
-        </div>
+
 
         {/* Mode Toggle Tabs */}
         <div className="bg-slate-800/80 p-1.5 rounded-2xl border border-slate-700/60 grid grid-cols-2 gap-2 shadow-lg">
           <button
             onClick={() => setActiveTab('create')}
-            className={`flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer ${
-              activeTab === 'create'
+            className={`flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer ${activeTab === 'create'
                 ? 'bg-indigo-600 text-white shadow-md'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
-            }`}
+              }`}
           >
             <PlusCircle className="w-4 h-4" />
             Buat Laporan Baru
           </button>
           <button
             onClick={() => setActiveTab('history')}
-            className={`flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer ${
-              activeTab === 'history'
+            className={`flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer ${activeTab === 'history'
                 ? 'bg-indigo-600 text-white shadow-md'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
-            }`}
+              }`}
           >
             <History className="w-4 h-4" />
             Cek Riwayat Laporan
@@ -518,7 +527,7 @@ export default function PublicReportPage() {
         {/* TAB 2: CEK RIWAYAT LAPORAN (LOGIN NO. WA / ID TIKET) */}
         {activeTab === 'history' && (
           <div className="space-y-6">
-            
+
             {/* Login / Search Box Card */}
             <div className="bg-slate-800/80 backdrop-blur-xl border border-slate-700/60 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-5">
               <div className="flex items-center justify-between border-b border-slate-700/60 pb-3">
