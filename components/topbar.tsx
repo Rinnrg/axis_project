@@ -4,42 +4,69 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { Menu, X, LogOut, LayoutDashboard, Calendar, FileText, User, ClipboardList, UserCheck, Megaphone } from 'lucide-react';
+import { LayoutDashboard, Calendar, FileText, User, ClipboardList, UserCheck, Megaphone } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Animation variants inspired by navigation-menu-01
-const menuVariants = {
-  initial: {
-    height: 0,
-    opacity: 0,
+// Perspective Text Component from navigation-menu-01
+function PerspectiveText({ label }: { label: string }) {
+  return (
+    <div className="perspectiveText">
+      <p>{label}</p>
+      <p>{label}</p>
+    </div>
+  );
+}
+
+// Sliding Pill Button from navigation-menu-01
+function NavButton({ isActive, toggleMenu }: { isActive: boolean; toggleMenu: () => void }) {
+  return (
+    <div className="nav-menu-button shadow-md">
+      <motion.div
+        className="slider"
+        animate={{ top: isActive ? '-100%' : '0%' }}
+        transition={{ duration: 0.5, type: 'tween', ease: [0.76, 0, 0.24, 1] }}
+      >
+        <div className="el cursor-pointer" onClick={toggleMenu}>
+          <PerspectiveText label="Menu" />
+        </div>
+        <div className="el cursor-pointer" onClick={toggleMenu}>
+          <PerspectiveText label="Close" />
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+// Animation Variants from navigation-menu-01 motion/index.ts
+const menuVariant = {
+  open: {
+    width: 'min(320px, calc(100vw - 32px))',
+    height: '440px',
+    top: '-12px',
+    right: '-12px',
+    transition: { duration: 0.75, type: 'tween', ease: [0.76, 0, 0.24, 1] },
   },
-  animate: {
-    height: 'auto',
-    opacity: 1,
+  closed: {
+    width: '90px',
+    height: '38px',
+    top: '0px',
+    right: '0px',
     transition: {
-      duration: 0.45,
-      type: 'tween',
-      ease: [0.76, 0, 0.24, 1],
-    },
-  },
-  exit: {
-    height: 0,
-    opacity: 0,
-    transition: {
-      duration: 0.35,
+      duration: 0.75,
+      delay: 0.35,
       type: 'tween',
       ease: [0.76, 0, 0.24, 1],
     },
   },
 };
 
-const perspectiveItem = {
+const perspective = {
   initial: {
     opacity: 0,
     rotateX: 90,
-    translateY: 30,
-    translateX: -10,
+    translateY: 80,
+    translateX: -20,
   },
   enter: (i: number) => ({
     opacity: 1,
@@ -47,35 +74,35 @@ const perspectiveItem = {
     translateY: 0,
     translateX: 0,
     transition: {
-      duration: 0.5,
-      delay: 0.08 + i * 0.07,
+      duration: 0.65,
+      delay: 0.4 + i * 0.1,
       ease: [0.215, 0.61, 0.355, 1],
-      opacity: { duration: 0.3 },
+      opacity: { duration: 0.35 },
     },
   }),
   exit: {
     opacity: 0,
-    transition: { duration: 0.25, type: 'linear', ease: [0.76, 0, 0.24, 1] },
+    transition: { duration: 0.4, type: 'linear', ease: [0.76, 0, 0.24, 1] },
   },
 };
 
-const slideInFooter = {
+const slideIn = {
   initial: {
     opacity: 0,
-    y: 15,
+    y: 20,
   },
   enter: (i: number) => ({
     opacity: 1,
     y: 0,
     transition: {
-      duration: 0.4,
-      delay: 0.2 + i * 0.07,
+      duration: 0.5,
+      delay: 0.6 + i * 0.1,
       ease: [0.215, 0.61, 0.355, 1],
     },
   }),
   exit: {
     opacity: 0,
-    transition: { duration: 0.25, type: 'tween', ease: 'easeInOut' },
+    transition: { duration: 0.4, type: 'tween', ease: 'easeInOut' },
   },
 };
 
@@ -146,7 +173,7 @@ export function Topbar() {
           <span className="font-bold text-slate-900 text-base hidden xs:inline sm:inline">CH Alam Juanda</span>
         </Link>
 
-        {/* Desktop nav */}
+        {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-1">
           {menuItems.map(item => (
             <Link
@@ -164,7 +191,7 @@ export function Topbar() {
           ))}
         </nav>
 
-        {/* Desktop right — avatar dropdown */}
+        {/* Desktop Right — Avatar Dropdown */}
         <div className="hidden md:flex items-center gap-3 relative">
           <button
             onClick={() => setProfileOpen(v => !v)}
@@ -188,7 +215,7 @@ export function Topbar() {
             )}
           </button>
 
-          {/* Profile Dropdown */}
+          {/* Profile Dropdown Modal */}
           {profileOpen && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setProfileOpen(false)} />
@@ -220,8 +247,9 @@ export function Topbar() {
           )}
         </div>
 
-        {/* Mobile right: avatar + hamburger */}
-        <div className="md:hidden flex items-center gap-2">
+        {/* Mobile Right — Navigation Menu 01 Component */}
+        <div className="md:hidden relative flex items-center gap-3">
+          {/* Avatar Icon */}
           {user?.image ? (
             <img
               src={user.image}
@@ -234,95 +262,94 @@ export function Topbar() {
               {user?.name?.charAt(0).toUpperCase()}
             </div>
           )}
-          <button
-            onClick={() => setMenuOpen(v => !v)}
-            className="p-2 hover:bg-slate-100 rounded-lg transition-colors touch-manipulation cursor-pointer"
-            aria-label={menuOpen ? 'Tutup menu' : 'Buka menu'}
-          >
-            {menuOpen ? <X className="w-5 h-5 text-slate-700" /> : <Menu className="w-5 h-5 text-slate-700" />}
-          </button>
-        </div>
-      </div>
 
-      {/* Mobile Animated Dropdown Menu (using navigation-menu-01 animation variants) */}
-      <AnimatePresence>
-        {menuOpen && (
-          <motion.div
-            variants={menuVariants}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            className="md:hidden overflow-hidden border-t border-slate-100 bg-white shadow-lg"
-          >
-            {/* User info banner */}
+          {/* Navigation Menu 01 Container */}
+          <div className="relative z-50">
             <motion.div
-              variants={slideInFooter}
-              custom={0}
-              initial="initial"
-              animate="enter"
-              exit="exit"
-              className="px-4 py-3 bg-indigo-50 border-b border-indigo-100 flex items-center justify-between"
+              className="bg-[#2563eb] rounded-[25px] absolute right-0 top-0 overflow-hidden shadow-2xl border border-blue-400/30"
+              variants={menuVariant}
+              animate={menuOpen ? 'open' : 'closed'}
+              initial="closed"
             >
-              <div>
-                <p className="text-sm font-semibold text-indigo-900">{user?.name}</p>
-                <p className="text-xs text-indigo-600">{user?.position} • {user?.department}</p>
-              </div>
-              <Link
-                href="/profile"
-                onClick={() => setMenuOpen(false)}
-                className="text-xs font-semibold text-indigo-700 bg-indigo-100 hover:bg-indigo-200 px-2.5 py-1.5 rounded-lg transition-colors"
-              >
-                Profil
-              </Link>
+              <AnimatePresence>
+                {menuOpen && (
+                  <div className="flex flex-col justify-between pr-[40px] pl-[32px] pt-[60px] pb-[32px] h-full text-white">
+                    {/* Main Nav Links (Large Perspective Typography) */}
+                    <div className="flex flex-col gap-3">
+                      {menuItems.map((link, i) => (
+                        <div key={link.href} className="perspective-1000">
+                          <motion.div
+                            custom={i}
+                            variants={perspective}
+                            initial="initial"
+                            animate="enter"
+                            exit="exit"
+                          >
+                            <Link
+                              onClick={() => setMenuOpen(false)}
+                              href={link.href}
+                              className={`text-white text-[32px] sm:text-[36px] font-bold leading-tight hover:opacity-80 transition-opacity block ${
+                                isActive(link.href) ? 'underline underline-offset-4 decoration-2 decoration-white' : ''
+                              }`}
+                            >
+                              {link.label}
+                            </Link>
+                          </motion.div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Footer Links (Slide In Animation) */}
+                    <motion.div className="flex flex-col gap-2 pt-4 border-t border-white/20 mt-4">
+                      <motion.div
+                        variants={slideIn}
+                        custom={0}
+                        initial="initial"
+                        animate="enter"
+                        exit="exit"
+                        className="text-xs text-blue-100 flex items-center justify-between"
+                      >
+                        <span className="font-semibold">{user?.name}</span>
+                        <span className="opacity-75 uppercase tracking-wider text-[10px]">{user?.role}</span>
+                      </motion.div>
+
+                      <motion.div
+                        variants={slideIn}
+                        custom={1}
+                        initial="initial"
+                        animate="enter"
+                        exit="exit"
+                        className="flex items-center gap-5 pt-1 text-sm font-bold"
+                      >
+                        <Link
+                          href="/profile"
+                          onClick={() => setMenuOpen(false)}
+                          className="text-white hover:underline"
+                        >
+                          Profil Saya
+                        </Link>
+                        <button
+                          onClick={handleLogoutClick}
+                          className="text-rose-200 hover:text-rose-100 hover:underline cursor-pointer"
+                        >
+                          Keluar
+                        </button>
+                      </motion.div>
+                    </motion.div>
+                  </div>
+                )}
+              </AnimatePresence>
             </motion.div>
 
-            <div className="px-3 py-3 space-y-1">
-              {menuItems.map((item, i) => (
-                <div key={item.href} className="perspective-1000">
-                  <motion.div
-                    custom={i}
-                    variants={perspectiveItem}
-                    initial="initial"
-                    animate="enter"
-                    exit="exit"
-                  >
-                    <Link
-                      href={item.href}
-                      onClick={() => setMenuOpen(false)}
-                      className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-colors touch-manipulation ${
-                        isActive(item.href)
-                          ? 'bg-indigo-50 text-indigo-700 font-semibold'
-                          : 'text-slate-700 hover:bg-slate-100'
-                      }`}
-                    >
-                      <item.icon className="w-5 h-5 shrink-0" />
-                      {item.label}
-                    </Link>
-                  </motion.div>
-                </div>
-              ))}
+            {/* Sliding Pill Button ("MENU" / "CLOSE") */}
+            <NavButton
+              isActive={menuOpen}
+              toggleMenu={() => setMenuOpen(!menuOpen)}
+            />
+          </div>
+        </div>
 
-              <motion.div
-                variants={slideInFooter}
-                custom={1}
-                initial="initial"
-                animate="enter"
-                exit="exit"
-                className="border-t border-slate-100 pt-2 mt-2"
-              >
-                <button
-                  onClick={handleLogoutClick}
-                  className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium
-                             text-red-600 hover:bg-red-50 transition-colors touch-manipulation cursor-pointer"
-                >
-                  <LogOut className="w-5 h-5 shrink-0" />
-                  Keluar
-                </button>
-              </motion.div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      </div>
     </div>
   );
 }
