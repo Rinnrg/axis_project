@@ -21,6 +21,8 @@ import {
   ChevronDown,
   ChevronUp,
   BarChart2,
+  Megaphone,
+  MessageSquare,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -28,6 +30,7 @@ interface DashboardStats {
   totalEmployees: number;
   pendingUsers: number;
   pendingPermissions: number;
+  openReports: number;
   presentToday: number;
   lateToday: number;
   leaveToday: number;
@@ -71,11 +74,26 @@ interface PendingPermission {
   createdAt: string;
 }
 
+interface RecentReport {
+  id: string;
+  title: string;
+  category: string;
+  description: string;
+  status: string;
+  isPublic: boolean;
+  reporterName?: string | null;
+  reporterPhone?: string | null;
+  userName?: string | null;
+  userPosition?: string | null;
+  createdAt: string;
+}
+
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [attendances, setAttendances] = useState<TodayAttendance[]>([]);
   const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
   const [pendingPermissions, setPendingPermissions] = useState<PendingPermission[]>([]);
+  const [recentReports, setRecentReports] = useState<RecentReport[]>([]);
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -92,6 +110,7 @@ export default function AdminDashboardPage() {
       setAttendances(data.attendances || []);
       setPendingUsers(data.pendingUsers || []);
       setPendingPermissions(data.pendingPermissions || []);
+      setRecentReports(data.recentReports || []);
     } catch (err: any) {
       setError(err.message || 'Terjadi kesalahan saat memuat data');
     } finally {
@@ -232,7 +251,7 @@ export default function AdminDashboardPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Dashboard Admin</h1>
-          <p className="text-slate-500 text-sm mt-1">Ikhtisar kehadiran harian dan persetujuan tertunda</p>
+          <p className="text-slate-500 text-sm mt-1">Ikhtisar kehadiran harian, persetujuan, & laporan pengaduan</p>
         </div>
         <button
           onClick={() => fetchDashboardData()}
@@ -270,7 +289,7 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Cards: always visible on sm+, togglable on mobile */}
-          <div className={`grid grid-cols-2 lg:grid-cols-4 gap-4 ${
+          <div className={`grid grid-cols-2 lg:grid-cols-5 gap-4 ${
             showStats ? 'block' : 'hidden sm:grid'
           }`}>
             {/* Total Employees */}
@@ -279,7 +298,7 @@ export default function AdminDashboardPage() {
                 <Users className="w-6 h-6" />
               </div>
               <div>
-                <p className="text-xs text-slate-500 font-medium">Total Karyawan Aktif</p>
+                <p className="text-xs text-slate-500 font-medium">Total Karyawan</p>
                 <p className="text-2xl font-bold text-slate-950 mt-0.5">{stats.totalEmployees}</p>
               </div>
             </div>
@@ -314,6 +333,17 @@ export default function AdminDashboardPage() {
               <div>
                 <p className="text-xs text-slate-500 font-medium">Izin Hari Ini</p>
                 <p className="text-2xl font-bold text-slate-950 mt-0.5">{stats.leaveToday}</p>
+              </div>
+            </div>
+
+            {/* Open Reports */}
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 col-span-2 lg:col-span-1">
+              <div className="w-12 h-12 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600 shrink-0">
+                <Megaphone className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 font-medium">Laporan Terbuka</p>
+                <p className="text-2xl font-bold text-slate-950 mt-0.5">{stats.openReports || 0}</p>
               </div>
             </div>
           </div>
@@ -414,7 +444,7 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* Right Column: Approvals (Takes 1 span on desktop) */}
+        {/* Right Column: Approvals & Recent Reports (Takes 1 span on desktop) */}
         <div className="space-y-6">
           
           {/* Pending Registration Approvals */}
@@ -570,6 +600,83 @@ export default function AdminDashboardPage() {
                 })}
               </div>
             )}
+          </div>
+
+          {/* Recent Reports / Pengaduan Terbaru Widget */}
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+            <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <Megaphone className="w-4 h-4 text-rose-600" />
+                  <span>Pengaduan & Laporan Terbaru</span>
+                  {recentReports.length > 0 && (
+                    <span className="px-1.5 py-0.5 bg-rose-100 text-rose-800 rounded-full text-[10px] font-bold">
+                      {recentReports.length}
+                    </span>
+                  )}
+                </h2>
+                <p className="text-[11px] text-slate-500 mt-0.5">Laporan terbaru dari pelanggan & karyawan</p>
+              </div>
+            </div>
+
+            {recentReports.length === 0 ? (
+              <div className="p-8 text-center text-slate-400 space-y-1">
+                <Info className="w-5 h-5 mx-auto text-slate-300" />
+                <p className="text-xs font-medium">Belum ada pengaduan masuk</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {recentReports.map((report) => (
+                  <div key={report.id} className="p-4 space-y-2 text-xs hover:bg-slate-50/60 transition-colors">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-1">
+                        <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
+                          report.isPublic ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'bg-slate-100 text-slate-700'
+                        }`}>
+                          {report.isPublic ? 'PELANGGAN' : 'KARYAWAN'}
+                        </span>
+                        <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-600">
+                          {report.category}
+                        </span>
+                      </div>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase shrink-0 ${
+                        report.status === 'OPEN' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                        report.status === 'IN_PROGRESS' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                        report.status === 'RESOLVED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                        'bg-slate-100 text-slate-600 border border-slate-200'
+                      }`}>
+                        {report.status}
+                      </span>
+                    </div>
+
+                    <h3 className="font-bold text-slate-900 leading-tight">{report.title}</h3>
+                    
+                    <p className="text-slate-500 line-clamp-2 leading-relaxed">
+                      {report.description}
+                    </p>
+
+                    <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-50">
+                      <span>
+                        Oleh: <strong className="text-slate-700">{report.reporterName || report.userName || 'Anonim'}</strong>
+                      </span>
+                      <span>
+                        {new Date(report.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="bg-slate-50 px-6 py-3 border-t border-slate-100 text-center">
+              <Link
+                href="/admin/report"
+                className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors flex items-center justify-center gap-0.5"
+              >
+                <span>Kelola Seluruh Laporan</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
           </div>
 
         </div>

@@ -44,6 +44,10 @@ export async function GET(req: NextRequest) {
       where: { status: 'PENDING' },
     });
 
+    const openReportsCount = await prisma.report.count({
+      where: { status: { in: ['OPEN', 'IN_PROGRESS'] } },
+    });
+
     // 4. Query today's attendances
     const attendances = await prisma.attendance.findMany({
       where: {
@@ -117,7 +121,21 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: 'desc' },
     });
 
-    // 8. Calculate counters for today's presence
+    // 8. Query 5 latest reports (Pengaduan terbaru)
+    const recentReportsRaw = await prisma.report.findMany({
+      take: 5,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: {
+          select: {
+            name: true,
+            position: true,
+          },
+        },
+      },
+    });
+
+    // 9. Calculate counters for today's presence
     const presentCount = attendances.filter(a => a.status === 'HADIR' || a.status === 'TELAT').length;
     const lateCount = attendances.filter(a => a.status === 'TELAT').length;
     const leaveCount = activeLeaves.length;
@@ -150,11 +168,26 @@ export async function GET(req: NextRequest) {
       createdAt: fmtDate(p.createdAt),
     }));
 
+    const formattedReports = recentReportsRaw.map(r => ({
+      id: r.id,
+      title: r.title,
+      category: r.category,
+      description: r.description,
+      status: r.status,
+      isPublic: r.isPublic || !r.userId,
+      reporterName: r.reporterName || null,
+      reporterPhone: r.reporterPhone || null,
+      userName: r.user?.name || null,
+      userPosition: r.user?.position || null,
+      createdAt: r.createdAt.toISOString(),
+    }));
+
     return NextResponse.json({
       stats: {
         totalEmployees,
         pendingUsers: pendingUsersCount,
         pendingPermissions: pendingPermissionsCount,
+        openReports: openReportsCount,
         presentToday: presentCount,
         lateToday: lateCount,
         leaveToday: leaveCount,
@@ -162,6 +195,7 @@ export async function GET(req: NextRequest) {
       attendances: formattedAttendances,
       pendingUsers,
       pendingPermissions: formattedPermissions,
+      recentReports: formattedReports,
     });
   } catch (err) {
     console.error('[GET /api/admin/dashboard]', err);
