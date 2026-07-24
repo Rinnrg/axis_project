@@ -8,33 +8,35 @@ import { LayoutDashboard, Calendar, FileText, User, ClipboardList, UserCheck, Me
 import Swal from 'sweetalert2';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Perspective Text Component from navigation-menu-01
-function PerspectiveText({ label }: { label: string }) {
-  return (
-    <div className="perspectiveText">
-      <p>{label}</p>
-      <p>{label}</p>
-    </div>
-  );
-}
-
-// Sliding Pill Button from navigation-menu-01
+// Animated 2-Line to X Toggle Button Component
 function NavButton({ isActive, toggleMenu }: { isActive: boolean; toggleMenu: () => void }) {
   return (
-    <div className="nav-menu-button shadow-md">
-      <motion.div
-        className="slider"
-        animate={{ top: isActive ? '-100%' : '0%' }}
-        transition={{ duration: 0.5, type: 'tween', ease: [0.76, 0, 0.24, 1] }}
-      >
-        <div className="el cursor-pointer" onClick={toggleMenu}>
-          <PerspectiveText label="Menu" />
-        </div>
-        <div className="el cursor-pointer" onClick={toggleMenu}>
-          <PerspectiveText label="Close" />
-        </div>
-      </motion.div>
-    </div>
+    <button
+      onClick={toggleMenu}
+      className={`w-11 h-11 rounded-full flex items-center justify-center transition-colors shadow-md cursor-pointer relative z-50 ${
+        isActive ? 'bg-slate-900 text-white' : 'bg-[#2563eb] text-white'
+      }`}
+      aria-label={isActive ? 'Tutup menu' : 'Buka menu'}
+    >
+      <div className="w-5 h-5 flex flex-col justify-center items-center gap-[6px] relative">
+        <motion.span
+          animate={{
+            rotate: isActive ? 45 : 0,
+            y: isActive ? 4 : 0,
+          }}
+          transition={{ duration: 0.35, ease: [0.76, 0, 0.24, 1] }}
+          className="w-5 h-[2.5px] bg-white rounded-full block origin-center"
+        />
+        <motion.span
+          animate={{
+            rotate: isActive ? -45 : 0,
+            y: isActive ? -4 : 0,
+          }}
+          transition={{ duration: 0.35, ease: [0.76, 0, 0.24, 1] }}
+          className="w-5 h-[2.5px] bg-white rounded-full block origin-center"
+        />
+      </div>
+    </button>
   );
 }
 
@@ -43,13 +45,13 @@ const menuVariant = {
   open: {
     width: 'min(320px, calc(100vw - 32px))',
     height: '440px',
-    top: '-12px',
-    right: '-12px',
+    top: '-10px',
+    right: '-10px',
     transition: { duration: 0.75, type: 'tween', ease: [0.76, 0, 0.24, 1] },
   },
   closed: {
-    width: '90px',
-    height: '38px',
+    width: '44px',
+    height: '44px',
     top: '0px',
     right: '0px',
     transition: {
@@ -247,7 +249,7 @@ export function Topbar() {
           )}
         </div>
 
-        {/* Mobile Right — Navigation Menu 01 Component */}
+        {/* Mobile Right — Navigation Menu 01 Component with Animated 2-Line Toggle */}
         <div className="md:hidden relative flex items-center gap-3">
           {/* Avatar Icon */}
           {user?.image ? (
@@ -264,7 +266,7 @@ export function Topbar() {
           )}
 
           {/* Navigation Menu 01 Container */}
-          <div className="relative z-50">
+          <div className="relative z-50 flex items-center justify-center">
             <motion.div
               className="bg-[#2563eb] rounded-[25px] absolute right-0 top-0 overflow-hidden shadow-2xl border border-blue-400/30"
               variants={menuVariant}
@@ -341,7 +343,7 @@ export function Topbar() {
               </AnimatePresence>
             </motion.div>
 
-            {/* Sliding Pill Button ("MENU" / "CLOSE") */}
+            {/* Animated 2-Line to X Button */}
             <NavButton
               isActive={menuOpen}
               toggleMenu={() => setMenuOpen(!menuOpen)}
