@@ -144,20 +144,24 @@ enum PermissionStatus {
 // REPORT (Laporan / Komplain Club House)
 // ============================================================
 model Report {
-  id          String         @id @default(cuid())
-  userId      String
-  title       String
-  category    ReportCategory
-  description String         @db.Text
-  location    String?
-  priority    ReportPriority @default(MEDIUM)
-  status      ReportStatus   @default(OPEN)
-  adminNote   String?        @db.Text
-  attachment  String?        // Supabase Storage URL or base64
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id            String         @id @default(cuid())
+  userId        String?
+  reporterName  String?
+  reporterPhone String?
+  reporterEmail String?
+  isPublic      Boolean        @default(false)
+  title         String
+  category      ReportCategory
+  description   String         @db.Text
+  location      String?
+  priority      ReportPriority @default(MEDIUM)
+  status        ReportStatus   @default(OPEN)
+  adminNote     String?        @db.Text
+  attachment    String?        // Supabase Storage URL or base64
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("reports")
 }

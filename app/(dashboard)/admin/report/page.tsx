@@ -19,7 +19,14 @@ import {
   MapPin,
   Tag,
   User as UserIcon,
+  Phone,
+  Mail,
   ChevronDown,
+  ExternalLink,
+  Paperclip,
+  Users,
+  Building,
+  Image as ImageIcon,
 } from 'lucide-react';
 
 interface ReportUser {
@@ -32,7 +39,11 @@ interface ReportUser {
 
 interface ReportItem {
   id: string;
-  userId: string;
+  userId?: string | null;
+  isPublic?: boolean;
+  reporterName?: string | null;
+  reporterPhone?: string | null;
+  reporterEmail?: string | null;
   title: string;
   category: string;
   description: string;
@@ -40,8 +51,9 @@ interface ReportItem {
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
   status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
   adminNote: string | null;
+  attachment: string | null;
   createdAt: string;
-  user: ReportUser;
+  user?: ReportUser | null;
 }
 
 const CATEGORIES: Record<string, string> = {
@@ -73,12 +85,16 @@ export default function AdminReportPage() {
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [typeFilter, setTypeFilter] = useState<'ALL' | 'PUBLIC' | 'INTERNAL'>('ALL');
 
   // Edit Modal State
   const [selectedReport, setSelectedReport] = useState<ReportItem | null>(null);
   const [editStatus, setEditStatus] = useState<string>('OPEN');
   const [editAdminNote, setEditAdminNote] = useState<string>('');
   const [updating, setUpdating] = useState(false);
+
+  // Image Preview Modal State
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const fetchReports = async () => {
     setLoading(true);
@@ -189,101 +205,168 @@ export default function AdminReportPage() {
     }
   };
 
+  // Utility to generate WhatsApp Link
+  const formatWhatsAppUrl = (phone: string, title: string) => {
+    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    let formattedPhone = cleanPhone;
+    if (formattedPhone.startsWith('0')) {
+      formattedPhone = '62' + formattedPhone.slice(1);
+    }
+    const text = encodeURIComponent(
+      `Halo, saya Admin Club House terkait laporan Anda: "${title}".`
+    );
+    return `https://wa.me/${formattedPhone}?text=${text}`;
+  };
+
   const filteredReports = reports.filter((r) => {
+    const isPublic = r.isPublic || !r.userId;
+    const matchesType =
+      typeFilter === 'ALL' ||
+      (typeFilter === 'PUBLIC' && isPublic) ||
+      (typeFilter === 'INTERNAL' && !isPublic);
+
+    const reporterName = isPublic ? r.reporterName || 'Pelanggan' : r.user?.name || '';
     const matchesSearch =
       r.title.toLowerCase().includes(search.toLowerCase()) ||
-      r.user?.name.toLowerCase().includes(search.toLowerCase()) ||
+      reporterName.toLowerCase().includes(search.toLowerCase()) ||
       (r.location && r.location.toLowerCase().includes(search.toLowerCase())) ||
-      r.description.toLowerCase().includes(search.toLowerCase());
+      r.description.toLowerCase().includes(search.toLowerCase()) ||
+      (r.reporterPhone && r.reporterPhone.includes(search));
 
     const matchesStatus = statusFilter === 'ALL' || r.status === statusFilter;
 
-    return matchesSearch && matchesStatus;
+    return matchesType && matchesSearch && matchesStatus;
   });
 
   const stats = {
     total: reports.length,
+    publicCount: reports.filter((r) => r.isPublic || !r.userId).length,
+    internalCount: reports.filter((r) => !r.isPublic && r.userId).length,
     open: reports.filter((r) => r.status === 'OPEN').length,
     inProgress: reports.filter((r) => r.status === 'IN_PROGRESS').length,
     resolved: reports.filter((r) => r.status === 'RESOLVED').length,
-    closed: reports.filter((r) => r.status === 'CLOSED').length,
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
+        
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-2.5">
               <Megaphone className="w-8 h-8 text-indigo-600" />
-              Kelola Laporan Club House
+              Kelola Laporan & Pengaduan
             </h1>
             <p className="text-slate-600 mt-1">
-              Pantau dan tindak lanjuti komplain serta keluhan fasilitas di Club House
+              Pantau dan tindak lanjuti laporan dari pelanggan (tanpa login) serta keluhan internal karyawan.
             </p>
           </div>
-          {loading && (
-            <div className="flex items-center gap-2 text-indigo-600 font-medium text-sm">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Memuat data...
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            <a
+              href="/pengaduan"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl transition-all shadow-sm"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Buka Form Pelanggan
+            </a>
+            {loading && (
+              <div className="flex items-center gap-2 text-indigo-600 font-medium text-sm pl-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Laporan</p>
             <p className="text-2xl font-bold text-slate-900 mt-1">{stats.total}</p>
           </div>
-          <div className="bg-amber-50/80 p-4 rounded-xl border border-amber-200 shadow-sm">
+          <div className="bg-purple-50/90 p-4 rounded-xl border border-purple-200 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wider text-purple-700">Pelanggan</p>
+            <p className="text-2xl font-bold text-purple-900 mt-1">{stats.publicCount}</p>
+          </div>
+          <div className="bg-blue-50/90 p-4 rounded-xl border border-blue-200 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wider text-blue-700">Karyawan</p>
+            <p className="text-2xl font-bold text-blue-900 mt-1">{stats.internalCount}</p>
+          </div>
+          <div className="bg-amber-50/90 p-4 rounded-xl border border-amber-200 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-wider text-amber-700">Terbuka</p>
             <p className="text-2xl font-bold text-amber-900 mt-1">{stats.open}</p>
           </div>
-          <div className="bg-blue-50/80 p-4 rounded-xl border border-blue-200 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-wider text-blue-700">Diproses</p>
-            <p className="text-2xl font-bold text-blue-900 mt-1">{stats.inProgress}</p>
+          <div className="bg-sky-50/90 p-4 rounded-xl border border-sky-200 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wider text-sky-700">Diproses</p>
+            <p className="text-2xl font-bold text-sky-900 mt-1">{stats.inProgress}</p>
           </div>
-          <div className="bg-emerald-50/80 p-4 rounded-xl border border-emerald-200 shadow-sm">
+          <div className="bg-emerald-50/90 p-4 rounded-xl border border-emerald-200 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700">Selesai</p>
             <p className="text-2xl font-bold text-emerald-900 mt-1">{stats.resolved}</p>
           </div>
-          <div className="bg-slate-100 p-4 rounded-xl border border-slate-200 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-600">Ditutup</p>
-            <p className="text-2xl font-bold text-slate-800 mt-1">{stats.closed}</p>
-          </div>
         </div>
 
-        {/* Filters */}
-        <div className="bg-white rounded-xl shadow-sm p-4 sm:p-5 border border-slate-200 flex flex-col sm:flex-row gap-4 justify-between items-center">
+        {/* Filters Panel */}
+        <div className="bg-white rounded-xl shadow-sm p-4 sm:p-5 border border-slate-200 flex flex-col md:flex-row gap-4 justify-between items-center">
           {/* Search */}
-          <div className="relative w-full sm:w-80">
+          <div className="relative w-full md:w-80">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
             <input
               type="text"
-              placeholder="Cari judul, nama, atau lokasi..."
+              placeholder="Cari nama, no telp, judul, atau lokasi..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
 
-          {/* Status Filter Tabs */}
-          <div className="flex flex-wrap gap-1.5 w-full sm:w-auto">
-            {['ALL', 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'].map((st) => (
+          <div className="flex flex-wrap gap-3 w-full md:w-auto items-center justify-end">
+            {/* Sender Type Selector */}
+            <div className="flex items-center bg-slate-100 p-1 rounded-xl">
               <button
-                key={st}
-                onClick={() => setStatusFilter(st)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  statusFilter === st
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                onClick={() => setTypeFilter('ALL')}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  typeFilter === 'ALL' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                {st === 'ALL' ? 'Semua' : STATUSES[st]?.label || st}
+                Semua Tipe
               </button>
-            ))}
+              <button
+                onClick={() => setTypeFilter('PUBLIC')}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  typeFilter === 'PUBLIC' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Pelanggan
+              </button>
+              <button
+                onClick={() => setTypeFilter('INTERNAL')}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  typeFilter === 'INTERNAL' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Karyawan
+              </button>
+            </div>
+
+            {/* Status Filter Tabs */}
+            <div className="flex flex-wrap gap-1">
+              {['ALL', 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'].map((st) => (
+                <button
+                  key={st}
+                  onClick={() => setStatusFilter(st)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    statusFilter === st
+                      ? 'bg-indigo-600 text-white shadow-sm'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  {st === 'ALL' ? 'Semua Status' : STATUSES[st]?.label || st}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -301,15 +384,31 @@ export default function AdminReportPage() {
               const statusCfg = STATUSES[report.status] || STATUSES.OPEN;
               const priCfg = PRIORITIES[report.priority] || PRIORITIES.MEDIUM;
               const StatusIcon = statusCfg.icon;
+              const isPublic = report.isPublic || !report.userId;
 
               return (
                 <div
                   key={report.id}
-                  className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4 hover:border-slate-300 transition-all"
+                  className={`bg-white rounded-2xl border ${
+                    isPublic ? 'border-purple-200/80 shadow-purple-500/5' : 'border-slate-200'
+                  } shadow-sm p-5 space-y-4 hover:border-indigo-300 transition-all`}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 border-b border-slate-100 pb-3">
                     <div>
-                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                        {/* Sender Type Badge */}
+                        {isPublic ? (
+                          <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-gradient-to-r from-purple-600 to-indigo-600 text-white flex items-center gap-1 shadow-xs">
+                            <Users className="w-3 h-3" />
+                            PELANGGAN (PUBLIC)
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-200 flex items-center gap-1">
+                            <Building className="w-3 h-3" />
+                            KARYAWAN
+                          </span>
+                        )}
+
                         <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${statusCfg.color} flex items-center gap-1`}>
                           <StatusIcon className="w-3 h-3" />
                           {statusCfg.label}
@@ -321,6 +420,7 @@ export default function AdminReportPage() {
                           {CATEGORIES[report.category] || report.category}
                         </span>
                       </div>
+
                       <h3 className="text-lg font-bold text-slate-900">{report.title}</h3>
                     </div>
 
@@ -343,36 +443,88 @@ export default function AdminReportPage() {
                   </div>
 
                   {/* Body Content */}
-                  <div className="space-y-2">
-                    <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">
+                  <div className="space-y-3">
+                    <p className="text-sm text-slate-800 leading-relaxed whitespace-pre-line">
                       {report.description}
                     </p>
 
-                    <div className="flex flex-wrap gap-4 text-xs text-slate-500 pt-1">
-                      <span className="flex items-center gap-1 font-medium text-slate-700">
-                        <UserIcon className="w-3.5 h-3.5 text-slate-400" />
-                        {report.user?.name} ({report.user?.position || 'Karyawan'})
-                      </span>
-                      {report.location && (
-                        <span className="flex items-center gap-1">
-                          <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                          Lokasi: {report.location}
+                    {/* Attachment Photo Thumbnail */}
+                    {report.attachment && (
+                      <div className="pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setPreviewImage(report.attachment)}
+                          className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 transition-colors cursor-pointer"
+                        >
+                          <ImageIcon className="w-4 h-4 text-indigo-600" />
+                          Lihat Lampiran Foto
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Reporter Info Details Box */}
+                    <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs">
+                      <div className="flex flex-wrap items-center gap-4 text-slate-700">
+                        {isPublic ? (
+                          <>
+                            <span className="flex items-center gap-1.5 font-bold text-purple-950">
+                              <UserIcon className="w-4 h-4 text-purple-600" />
+                              {report.reporterName || 'Pelanggan'}
+                            </span>
+                            {report.reporterPhone && (
+                              <span className="flex items-center gap-1 font-semibold text-slate-800">
+                                <Phone className="w-3.5 h-3.5 text-slate-400" />
+                                {report.reporterPhone}
+                              </span>
+                            )}
+                            {report.reporterEmail && (
+                              <span className="flex items-center gap-1 text-slate-600">
+                                <Mail className="w-3.5 h-3.5 text-slate-400" />
+                                {report.reporterEmail}
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          <span className="flex items-center gap-1.5 font-bold text-slate-900">
+                            <UserIcon className="w-4 h-4 text-blue-600" />
+                            {report.user?.name} ({report.user?.position || 'Karyawan'})
+                          </span>
+                        )}
+
+                        {report.location && (
+                          <span className="flex items-center gap-1 text-slate-600">
+                            <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                            Lokasi: {report.location}
+                          </span>
+                        )}
+                        <span className="text-slate-400">
+                          {new Date(report.createdAt).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}
                         </span>
+                      </div>
+
+                      {/* WhatsApp Direct Contact Button for Public Customers */}
+                      {isPublic && report.reporterPhone && (
+                        <a
+                          href={formatWhatsAppUrl(report.reporterPhone, report.title)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-lg transition-colors shadow-xs"
+                        >
+                          <Phone className="w-3.5 h-3.5" />
+                          Hubungi WhatsApp
+                        </a>
                       )}
-                      <span>
-                        Dibuat: {new Date(report.createdAt).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}
-                      </span>
                     </div>
                   </div>
 
-                  {/* Admin Note if exists */}
+                  {/* Admin Note */}
                   {report.adminNote && (
-                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 mt-2">
-                      <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                    <div className="bg-indigo-50/80 border border-indigo-100 rounded-xl p-3.5">
+                      <p className="text-xs font-bold text-indigo-700 uppercase tracking-wider mb-1 flex items-center gap-1.5">
                         <MessageSquare className="w-3.5 h-3.5 text-indigo-600" />
                         Tanggapan Admin / Pengelola:
                       </p>
-                      <p className="text-xs text-slate-800 leading-relaxed">{report.adminNote}</p>
+                      <p className="text-xs text-indigo-900 leading-relaxed whitespace-pre-line">{report.adminNote}</p>
                     </div>
                   )}
                 </div>
@@ -390,7 +542,7 @@ export default function AdminReportPage() {
                   <Megaphone className="w-12 h-12 text-slate-300 mx-auto mb-3" />
                   <p className="text-slate-700 font-semibold">Tidak ada laporan yang ditemukan</p>
                   <p className="text-slate-400 text-xs mt-1">
-                    Coba sesuaikan pencarian atau filter status laporan.
+                    Coba sesuaikan pencarian atau filter tipe/status laporan.
                   </p>
                 </>
               )}
@@ -406,7 +558,7 @@ export default function AdminReportPage() {
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
                 <h3 className="font-bold text-slate-900 text-lg">Tindak Lanjuti Laporan</h3>
-                <p className="text-xs text-slate-500">{selectedReport.title}</p>
+                <p className="text-xs text-slate-500 font-medium truncate max-w-xs">{selectedReport.title}</p>
               </div>
               <button
                 onClick={() => setSelectedReport(null)}
@@ -442,7 +594,7 @@ export default function AdminReportPage() {
                   value={editAdminNote}
                   onChange={(e) => setEditAdminNote(e.target.value)}
                   rows={4}
-                  placeholder="Tuliskan tindak lanjut atau solusi yang telah dilakukan..."
+                  placeholder="Tuliskan tindak lanjut atau penjelasan solusi untuk dilaporkan ke pelanggan/karyawan..."
                   className="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                 />
               </div>
@@ -471,6 +623,24 @@ export default function AdminReportPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Image Preview Modal */}
+      {previewImage && (
+        <div
+          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div className="relative max-w-3xl max-h-[90vh] bg-slate-900 rounded-2xl overflow-hidden shadow-2xl p-2">
+            <button
+              onClick={() => setPreviewImage(null)}
+              className="absolute top-4 right-4 p-2 bg-slate-800/80 hover:bg-slate-700 text-white rounded-full transition-colors z-10"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <img src={previewImage} alt="Preview Lampiran" className="max-w-full max-h-[85vh] object-contain rounded-xl" />
           </div>
         </div>
       )}

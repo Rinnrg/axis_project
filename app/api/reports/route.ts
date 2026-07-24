@@ -144,7 +144,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     const isAdminRole = session.user.role === 'admin' || session.user.role === 'chief_admin';
-    const isOwner = existing.userId === session.user.id;
+    const isOwner = !!existing.userId && existing.userId === session.user.id;
 
     if (!isAdminRole && !isOwner) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
