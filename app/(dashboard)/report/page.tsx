@@ -30,13 +30,6 @@ const CATEGORIES = [
   { value: 'LAINNYA',    label: '📋 Lainnya',    desc: 'Laporan lain-lain' },
 ];
 
-const PRIORITIES = [
-  { value: 'LOW',    label: 'Rendah',  color: 'text-slate-600  bg-slate-50  border-slate-200' },
-  { value: 'MEDIUM', label: 'Sedang',  color: 'text-blue-600   bg-blue-50   border-blue-200' },
-  { value: 'HIGH',   label: 'Tinggi',  color: 'text-amber-600  bg-amber-50  border-amber-200' },
-  { value: 'URGENT', label: 'Urgent',  color: 'text-red-600    bg-red-50    border-red-200' },
-];
-
 const STATUS_CONFIG: Record<string, { label: string; icon: any; color: string }> = {
   OPEN:        { label: 'Terbuka',     icon: AlertTriangle, color: 'bg-amber-50 text-amber-700 border-amber-200' },
   IN_PROGRESS: { label: 'Diproses',    icon: Clock,         color: 'bg-blue-50  text-blue-700  border-blue-200'  },
@@ -49,8 +42,6 @@ interface Report {
   title: string;
   category: string;
   description: string;
-  location: string | null;
-  priority: string;
   status: string;
   adminNote: string | null;
   createdAt: string;
@@ -67,8 +58,6 @@ export default function ReportPage() {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
-  const [location, setLocation] = useState('');
-  const [priority, setPriority] = useState('MEDIUM');
 
   const fetchReports = async () => {
     try {
@@ -88,8 +77,6 @@ export default function ReportPage() {
     setTitle('');
     setCategory('');
     setDescription('');
-    setLocation('');
-    setPriority('MEDIUM');
     setShowForm(false);
   };
 
@@ -105,7 +92,7 @@ export default function ReportPage() {
       const res = await fetch('/api/reports', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: title.trim(), category, description: description.trim(), location: location.trim() || null, priority }),
+        body: JSON.stringify({ title: title.trim(), category, description: description.trim() }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Gagal mengirim laporan');
@@ -120,7 +107,6 @@ export default function ReportPage() {
     }
   };
 
-  const getPriorityConfig = (val: string) => PRIORITIES.find(p => p.value === val) || PRIORITIES[1];
   const getCategoryLabel = (val: string) => CATEGORIES.find(c => c.value === val)?.label || val;
 
   return (
@@ -172,48 +158,21 @@ export default function ReportPage() {
                 />
               </div>
 
-              {/* Category & Priority row */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-                    <Tag className="w-4 h-4 text-slate-400" />Kategori
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={category} onChange={e => setCategory(e.target.value)} required
-                      className="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none bg-white pr-8 cursor-pointer"
-                    >
-                      <option value="" disabled>Pilih...</option>
-                      {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-                    </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-slate-700">Prioritas</label>
-                  <div className="relative">
-                    <select
-                      value={priority} onChange={e => setPriority(e.target.value)}
-                      className="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none bg-white pr-8 cursor-pointer"
-                    >
-                      {PRIORITIES.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-                    </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Location */}
+              {/* Category */}
               <div className="space-y-1.5">
                 <label className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-                  <MapPin className="w-4 h-4 text-slate-400" />Lokasi <span className="text-slate-400 font-normal">(opsional)</span>
+                  <Tag className="w-4 h-4 text-slate-400" />Kategori
                 </label>
-                <input
-                  type="text" value={location} onChange={e => setLocation(e.target.value)}
-                  placeholder="Contoh: Lobi lantai 1, Area kolam renang"
-                  className="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
-                />
+                <div className="relative">
+                  <select
+                    value={category} onChange={e => setCategory(e.target.value)} required
+                    className="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none bg-white pr-8 cursor-pointer"
+                  >
+                    <option value="" disabled>Pilih...</option>
+                    {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                </div>
               </div>
 
               {/* Description */}
@@ -265,7 +224,6 @@ export default function ReportPage() {
           ) : (
             reports.map(report => {
               const statusCfg = STATUS_CONFIG[report.status] || STATUS_CONFIG.OPEN;
-              const priCfg = getPriorityConfig(report.priority);
               const StatusIcon = statusCfg.icon;
               return (
                 <div key={report.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5 space-y-3">
@@ -277,9 +235,6 @@ export default function ReportPage() {
                       </p>
                     </div>
                     <div className="flex gap-1.5 shrink-0">
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${priCfg.color}`}>
-                        {priCfg.label}
-                      </span>
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${statusCfg.color}`}>
                         <StatusIcon className="w-2.5 h-2.5" />
                         {statusCfg.label}
@@ -288,12 +243,6 @@ export default function ReportPage() {
                   </div>
 
                   <p className="text-sm text-slate-600 leading-relaxed line-clamp-3">{report.description}</p>
-
-                  {report.location && (
-                    <p className="text-xs text-slate-400 flex items-center gap-1">
-                      <MapPin className="w-3 h-3" />{report.location}
-                    </p>
-                  )}
 
                   {report.adminNote && (
                     <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-3">
