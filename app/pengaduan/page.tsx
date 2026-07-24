@@ -31,11 +31,20 @@ const CATEGORIES = [
   { value: 'LAINNYA', label: '📋 Lainnya', desc: 'Saran, masukan, atau keluhan lainnya' },
 ];
 
-// Report Details Fields
-const [title, setTitle] = useState('');
-const [category, setCategory] = useState('');
-const [description, setDescription] = useState('');
-const [attachment, setAttachment] = useState<string | null>(null);
+export default function PublicReportPage() {
+  const [submitting, setSubmitting] = useState(false);
+  const [successData, setSuccessData] = useState<{ id: string } | null>(null);
+
+  // Customer Contact Fields
+  const [reporterName, setReporterName] = useState('');
+  const [reporterPhone, setReporterPhone] = useState('');
+  const [reporterEmail, setReporterEmail] = useState('');
+
+  // Report Details Fields
+  const [title, setTitle] = useState('');
+  const [category, setCategory] = useState('');
+  const [description, setDescription] = useState('');
+  const [attachment, setAttachment] = useState<string | null>(null);
 
 // Photo Upload Handler (base64)
 const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
