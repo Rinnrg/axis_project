@@ -243,7 +243,7 @@ export default function AdminReportPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
-        
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -254,22 +254,6 @@ export default function AdminReportPage() {
             <p className="text-slate-600 mt-1">
               Pantau dan tindak lanjuti laporan dari pelanggan (tanpa login) serta keluhan internal karyawan.
             </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <a
-              href="/pengaduan"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl transition-all shadow-sm"
-            >
-              <ExternalLink className="w-4 h-4" />
-              Buka Form Pelanggan
-            </a>
-            {loading && (
-              <div className="flex items-center gap-2 text-indigo-600 font-medium text-sm pl-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
-              </div>
-            )}
           </div>
         </div>
 
@@ -320,25 +304,22 @@ export default function AdminReportPage() {
             <div className="flex items-center bg-slate-100 p-1 rounded-xl">
               <button
                 onClick={() => setTypeFilter('ALL')}
-                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  typeFilter === 'ALL' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
-                }`}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${typeFilter === 'ALL' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                  }`}
               >
                 Semua Tipe
               </button>
               <button
                 onClick={() => setTypeFilter('PUBLIC')}
-                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  typeFilter === 'PUBLIC' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
-                }`}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${typeFilter === 'PUBLIC' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                  }`}
               >
                 Pelanggan
               </button>
               <button
                 onClick={() => setTypeFilter('INTERNAL')}
-                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  typeFilter === 'INTERNAL' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
-                }`}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${typeFilter === 'INTERNAL' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                  }`}
               >
                 Karyawan
               </button>
@@ -350,11 +331,10 @@ export default function AdminReportPage() {
                 <button
                   key={st}
                   onClick={() => setStatusFilter(st)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                    statusFilter === st
-                      ? 'bg-indigo-600 text-white shadow-sm'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${statusFilter === st
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
                 >
                   {st === 'ALL' ? 'Semua Status' : STATUSES[st]?.label || st}
                 </button>
@@ -381,9 +361,8 @@ export default function AdminReportPage() {
               return (
                 <div
                   key={report.id}
-                  className={`bg-white rounded-2xl border ${
-                    isPublic ? 'border-purple-200/80 shadow-purple-500/5' : 'border-slate-200'
-                  } shadow-sm p-5 space-y-4 hover:border-indigo-300 transition-all`}
+                  className={`bg-white rounded-2xl border ${isPublic ? 'border-purple-200/80 shadow-purple-500/5' : 'border-slate-200'
+                    } shadow-sm p-5 space-y-4 hover:border-indigo-300 transition-all`}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 border-b border-slate-100 pb-3">
                     <div>
