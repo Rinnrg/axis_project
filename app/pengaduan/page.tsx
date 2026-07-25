@@ -183,17 +183,40 @@ export default function PublicReportPage() {
     }
   };
 
+  const formatDate = (dateStr?: string | null) => {
+    if (!dateStr) return '—';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return '—';
+      return d.toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+    } catch {
+      return '—';
+    }
+  };
+
   // Fetch History by Phone / Ticket ID
   const fetchHistory = async (query: string) => {
-    if (!query.trim()) return;
+    const trimmed = query.trim();
+    if (!trimmed) return;
     setLoadingHistory(true);
     setSearched(true);
     try {
-      const res = await fetch(`/api/reports/public?query=${encodeURIComponent(query.trim())}`);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Gagal mengambil riwayat');
-      setHistoryReports(data.reports || []);
+      const res = await fetch(`/api/reports/public?query=${encodeURIComponent(trimmed)}`);
+      let data: any = {};
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error('Respon dari server tidak valid.');
+      }
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Gagal mengambil riwayat laporan.');
+      }
+
+      setHistoryReports(Array.isArray(data.reports) ? data.reports : []);
     } catch (err: any) {
+      console.error('[fetchHistory error]', err);
+      setHistoryReports([]);
       Swal.fire({
         icon: 'error',
         title: 'Gagal Memuat Riwayat',
@@ -208,6 +231,16 @@ export default function PublicReportPage() {
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!searchQuery.trim()) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Nomor / ID Tiket Kosong',
+        text: 'Mohon masukkan nomor WhatsApp/telepon atau ID Tiket untuk mencari.',
+        confirmButtonColor: '#4f46e5',
+        customClass: { popup: 'rounded-2xl' },
+      });
+      return;
+    }
     fetchHistory(searchQuery);
   };
 
@@ -566,9 +599,11 @@ export default function PublicReportPage() {
                 </div>
               ) : (
                 historyReports.map((report) => {
-                  const statusCfg = STATUS_CONFIG[report.status] || STATUS_CONFIG.OPEN;
-                  const StatusIcon = statusCfg.icon;
-                  const catDesc = CATEGORIES.find((c) => c.value === report.category)?.label || report.category;
+                  if (!report || !report.id) return null;
+                  const statusKey = (report.status || 'OPEN').toUpperCase();
+                  const statusCfg = STATUS_CONFIG[statusKey] || STATUS_CONFIG.OPEN;
+                  const StatusIcon = statusCfg.icon || AlertTriangle;
+                  const catDesc = CATEGORIES.find((c) => c.value === report.category)?.label || report.category || 'Laporan';
 
                   return (
                     <div
@@ -592,7 +627,7 @@ export default function PublicReportPage() {
                           </p>
                         </div>
                         <span className="text-xs text-slate-400 shrink-0">
-                          {new Date(report.createdAt).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}
+                          {formatDate(report.createdAt)}
                         </span>
                       </div>
 

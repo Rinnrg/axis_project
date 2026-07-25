@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
 
     if (!rawQuery) {
       return NextResponse.json(
-        { error: 'Nomor WhatsApp/Telepon atau ID Tiket wajib diisi' },
+        { error: 'Nomor WhatsApp/Telepon atau ID Tiket wajib diisi', reports: [] },
         { status: 400 }
       );
     }
@@ -27,14 +27,14 @@ export async function GET(req: NextRequest) {
     const orConditions: any[] = [
       { reporterPhone: { contains: rawQuery, mode: 'insensitive' } },
       { reporterEmail: { contains: rawQuery, mode: 'insensitive' } },
-      { id: { equals: rawQuery } },
+      { id: { contains: rawQuery, mode: 'insensitive' } },
       { title: { contains: rawQuery, mode: 'insensitive' } },
     ];
 
-    if (cleanDigits.length >= 3) {
+    if (cleanDigits && cleanDigits.length >= 3) {
       orConditions.push({ reporterPhone: { contains: cleanDigits, mode: 'insensitive' } });
     }
-    if (alternatePhone.length >= 3) {
+    if (alternatePhone && alternatePhone.length >= 3) {
       orConditions.push({ reporterPhone: { contains: alternatePhone, mode: 'insensitive' } });
     }
 
@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: true, count: reports.length, reports });
   } catch (err: any) {
     console.error('[GET /api/reports/public]', err);
-    return NextResponse.json({ error: 'Terjadi kesalahan pada server saat mencari laporan' }, { status: 500 });
+    return NextResponse.json({ error: 'Terjadi kesalahan pada server saat mencari laporan', reports: [] }, { status: 500 });
   }
 }
 
@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
         reporterPhone: reporterPhone.trim(),
         reporterEmail: reporterEmail?.trim() || null,
         title: title.trim(),
-        category,
+        category: category as any,
         description: description.trim(),
         attachment: attachment || null,
       },
