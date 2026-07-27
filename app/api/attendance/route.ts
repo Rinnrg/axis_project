@@ -115,10 +115,16 @@ export async function POST(req: NextRequest) {
         where: { userId_date: { userId, date: today } },
       })
 
-      // Fetch shift configuration
-      let config = await (prisma as any).shiftConfig.findUnique({
-        where: { id: 'default' },
-      })
+      // Fetch shift configuration safely
+      let config = null
+      try {
+        config = await (prisma as any).shiftConfig.findUnique({
+          where: { id: 'default' },
+        })
+      } catch (cfgErr) {
+        console.warn('shift_configs table missing on DB, using default:', cfgErr)
+      }
+
       if (!config) {
         config = {
           shift1Name: 'Shift 1',

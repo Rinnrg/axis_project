@@ -9,61 +9,51 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'userId dan shift wajib diisi' }, { status: 400 });
     }
 
-    const now = new Date();
-    let today: Date;
-    if (date) {
-      const [year, month, day] = date.split('-').map(Number);
-      today = new Date(Date.UTC(year, month - 1, day));
-    } else {
-      today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+    const [year, month, day] = (date || new Date().toISOString().split('T')[0]).split('-').map(Number);
+    const today = new Date(Date.UTC(year, month - 1, day));
+
+    let config = null;
+    try {
+      config = await (prisma as any).shiftConfig.findUnique({
+        where: { id: 'default' },
+      });
+    } catch (dbErr) {
+      console.warn('shift_configs missing, using default:', dbErr);
     }
 
-    // Get active shift config
-    let config = await (prisma as any).shiftConfig.findUnique({
-      where: { id: 'default' },
-    });
     if (!config) {
       config = {
-        shift1Name: 'Shift 1',
+        shift1Name: 'Shift 1 (Pagi)',
         shift1Start: '07:00',
         shift1End: '15:00',
-        shift2Name: 'Shift 2',
+        shift2Name: 'Shift 2 (Siang/Malam)',
         shift2Start: '15:00',
         shift2End: '23:00',
       };
     }
 
-    let shiftName = '';
-    if (shift === 'SHIFT_1') {
-      shiftName = `${config.shift1Name || 'Shift 1'} (${config.shift1Start} - ${config.shift1End})`;
-    } else if (shift === 'SHIFT_2') {
-      shiftName = `${config.shift2Name || 'Shift 2'} (${config.shift2Start} - ${config.shift2End})`;
-    } else {
-      shiftName = shift;
-    }
+    const shiftName = shift === 'SHIFT_1' ? config.shift1Name : config.shift2Name;
 
-    // Upsert attendance with shift choice
-    const record = await (prisma as any).attendance.upsert({
-      where: { userId_date: { userId, date: today } },
-      update: {
-        shift,
-        shiftName,
-      },
-      create: {
-        userId,
-        date: today,
-        shift,
-        shiftName,
-        status: 'HADIR',
-        notes: '',
-      },
-    });
+    let record = null;
+    try {
+      record = await (prisma as any).attendance.upsert({
+        where: { userId_date: { userId, date: today } },
+        update: { shift, shiftName },
+        create: { userId, date: today, shift, shiftName, status: 'HADIR', notes: '' },
+      });
+    } catch (dbErr) {
+      console.warn('Could not save shift columns to DB, falling back to notes:', dbErr);
+      record = await (prisma as any).attendance.upsert({
+        where: { userId_date: { userId, date: today } },
+        update: { notes: `Shift: ${shiftName}` },
+        create: { userId, date: today, status: 'HADIR', notes: `Shift: ${shiftName}` },
+      });
+    }
 
     return NextResponse.json({
       success: true,
-      attendance: record,
-      shift,
-      shiftName,
+      shift: record.shift || shift,
+      shiftName: record.shiftName || shiftName,
     });
   } catch (err: any) {
     console.error('[POST /api/attendance/shift]', err);

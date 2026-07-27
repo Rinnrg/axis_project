@@ -49,91 +49,116 @@ export async function GET(req: NextRequest) {
     });
 
     // 4. Query today's attendances
-    const attendances = await prisma.attendance.findMany({
-      where: {
-        date: {
-          gte: todayStart,
-          lt: todayEnd,
-        },
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            position: true,
-            department: true,
+    let attendances: any[] = [];
+    try {
+      attendances = await prisma.attendance.findMany({
+        where: {
+          date: {
+            gte: todayStart,
+            lt: todayEnd,
           },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              position: true,
+              department: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+    } catch (attErr) {
+      console.warn('Failed to fetch attendances for admin dashboard:', attErr);
+    }
 
     // 5. Query today's approved leaves/permissions
-    const activeLeaves = await prisma.permission.findMany({
-      where: {
-        status: 'APPROVED',
-        startDate: { lte: todayStart },
-        endDate: { gte: todayStart },
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            position: true,
-            department: true,
+    let activeLeaves: any[] = [];
+    try {
+      activeLeaves = await prisma.permission.findMany({
+        where: {
+          status: 'APPROVED',
+          startDate: { lte: todayStart },
+          endDate: { gte: todayStart },
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              position: true,
+              department: true,
+            },
           },
         },
-      },
-    });
+      });
+    } catch (permErr) {
+      console.warn('Failed to fetch permissions:', permErr);
+    }
 
     // 6. Query pending users lists
-    const pendingUsers = await prisma.user.findMany({
-      where: { status: 'PENDING' },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        phone: true,
-        position: true,
-        department: true,
-        joinDate: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    let pendingUsers: any[] = [];
+    try {
+      pendingUsers = await prisma.user.findMany({
+        where: { status: 'PENDING' },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          position: true,
+          department: true,
+          joinDate: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+    } catch (pUsersErr) {
+      console.warn('Failed to fetch pending users:', pUsersErr);
+    }
 
     // 7. Query pending leave/permission requests
-    const pendingPermissions = await prisma.permission.findMany({
-      where: { status: 'PENDING' },
-      include: {
-        user: {
-          select: {
-            name: true,
-            department: true,
+    let pendingPermissions: any[] = [];
+    try {
+      pendingPermissions = await prisma.permission.findMany({
+        where: { status: 'PENDING' },
+        include: {
+          user: {
+            select: {
+              name: true,
+              department: true,
+            },
           },
         },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+        orderBy: { createdAt: 'desc' },
+      });
+    } catch (pPermErr) {
+      console.warn('Failed to fetch pending permissions:', pPermErr);
+    }
 
     // 8. Query 5 latest reports (Pengaduan terbaru)
-    const recentReportsRaw = await prisma.report.findMany({
-      take: 5,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        user: {
-          select: {
-            name: true,
-            position: true,
+    let recentReportsRaw: any[] = [];
+    try {
+      recentReportsRaw = await prisma.report.findMany({
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: {
+            select: {
+              name: true,
+              position: true,
+            },
           },
         },
-      },
-    });
+      });
+    } catch (repErr) {
+      console.warn('Failed to fetch recent reports:', repErr);
+    }
 
     // 9. Calculate counters for today's presence
     const presentCount = attendances.filter(a => a.status === 'HADIR' || a.status === 'TELAT').length;
@@ -143,28 +168,28 @@ export async function GET(req: NextRequest) {
     const formattedAttendances = attendances.map(a => ({
       id: a.id,
       userId: a.userId,
-      employeeName: a.user.name,
-      email: a.user.email,
-      position: a.user.position || '-',
-      department: a.user.department || '-',
+      employeeName: a.user?.name || 'Karyawan',
+      email: a.user?.email || '-',
+      position: a.user?.position || '-',
+      department: a.user?.department || '-',
       checkInTime: fmtTime(a.checkInTime),
       checkOutTime: fmtTime(a.checkOutTime),
-      status: a.status.toLowerCase() as 'hadir' | 'telat' | 'izin' | 'alpha',
+      status: (a.status || 'HADIR').toLowerCase() as 'hadir' | 'telat' | 'izin' | 'alpha',
       notes: a.notes || '',
-      checkInPhoto: a.checkInPhoto,
-      checkOutPhoto: a.checkOutPhoto,
+      checkInPhoto: a.checkInPhoto || null,
+      checkOutPhoto: a.checkOutPhoto || null,
     }));
 
     const formattedPermissions = pendingPermissions.map(p => ({
       id: p.id,
       userId: p.userId,
-      userName: p.user.name,
-      department: p.user.department || '-',
-      type: p.type.toLowerCase() as 'izin' | 'cuti' | 'sakit',
+      userName: p.user?.name || 'Karyawan',
+      department: p.user?.department || '-',
+      type: (p.type || 'IZIN').toLowerCase() as 'izin' | 'cuti' | 'sakit',
       startDate: fmtDate(p.startDate),
       endDate: fmtDate(p.endDate),
       reason: p.reason,
-      attachment: p.attachment,
+      attachment: p.attachment || null,
       createdAt: fmtDate(p.createdAt),
     }));
 
@@ -179,7 +204,7 @@ export async function GET(req: NextRequest) {
       reporterPhone: r.reporterPhone || null,
       userName: r.user?.name || null,
       userPosition: r.user?.position || null,
-      createdAt: r.createdAt.toISOString(),
+      createdAt: r.createdAt ? r.createdAt.toISOString() : new Date().toISOString(),
     }));
 
     return NextResponse.json({
@@ -197,8 +222,15 @@ export async function GET(req: NextRequest) {
       pendingPermissions: formattedPermissions,
       recentReports: formattedReports,
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error('[GET /api/admin/dashboard]', err);
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+    return NextResponse.json({
+      error: 'Server error',
+      stats: { totalEmployees: 0, pendingUsers: 0, pendingPermissions: 0, openReports: 0, presentToday: 0, lateToday: 0, leaveToday: 0 },
+      attendances: [],
+      pendingUsers: [],
+      pendingPermissions: [],
+      recentReports: []
+    });
   }
 }
