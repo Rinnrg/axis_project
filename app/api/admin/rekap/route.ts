@@ -120,6 +120,8 @@ export async function GET(req: NextRequest) {
       const emp = employeeMap.get(att.userId)
       if (!emp) continue
 
+      const shiftDisplay = att.shiftName || (att.shift === 'SHIFT_1' ? 'Shift 1' : att.shift === 'SHIFT_2' ? 'Shift 2' : att.shift || '-');
+      
       rekapRecords.push({
         id: att.id,
         employeeId: att.userId,
@@ -129,6 +131,8 @@ export async function GET(req: NextRequest) {
         position: emp.position || '-',
         department: emp.department || '-',
         date: fmtDate(att.date),
+        shift: att.shift || '-',
+        shiftName: shiftDisplay,
         checkInTime: fmtTime(att.checkInTime),
         checkOutTime: fmtTime(att.checkOutTime),
         status: (att.status || 'HADIR').toLowerCase(),
@@ -167,6 +171,8 @@ export async function GET(req: NextRequest) {
           position: emp.position || '-',
           department: emp.department || '-',
           date: dateStr,
+          shift: '-',
+          shiftName: '-',
           checkInTime: null,
           checkOutTime: null,
           status: 'izin',

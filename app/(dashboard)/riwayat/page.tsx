@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { Calendar, Search, ChevronRight, RefreshCw, X } from 'lucide-react';
+import { Calendar, Search, ChevronRight, RefreshCw, X, BarChart2, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface AttendanceRecord {
   id: string;
@@ -25,6 +25,7 @@ export default function RiwayatPage() {
   const [records,    setRecords]    = useState<AttendanceRecord[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null);
+  const [showStats, setShowStats] = useState(false);
 
   const fetchRecords = useCallback(async () => {
     if (!user?.id) return;
@@ -78,13 +79,23 @@ export default function RiwayatPage() {
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Riwayat Presensi</h1>
             <p className="text-slate-500 mt-1 text-sm sm:text-base">Lihat dan filter riwayat kehadiran Anda</p>
           </div>
-          <button
-            onClick={fetchRecords}
-            className="p-2 text-slate-400 hover:text-slate-700 hover:bg-white rounded-lg transition-colors touch-manipulation"
-            title="Refresh"
-          >
-            <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowStats(v => !v)}
+              className="flex items-center gap-1.5 px-3 py-2 border border-slate-200 bg-white rounded-xl text-slate-700 text-xs font-semibold hover:bg-slate-50 transition-colors shadow-sm cursor-pointer"
+            >
+              <BarChart2 className="w-4 h-4 text-indigo-600" />
+              <span>{showStats ? 'Sembunyikan Ringkasan' : 'Tampilkan Ringkasan'}</span>
+              {showStats ? <ChevronUp className="w-3.5 h-3.5 text-slate-400" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400" />}
+            </button>
+            <button
+              onClick={fetchRecords}
+              className="p-2 text-slate-400 hover:text-slate-700 hover:bg-white rounded-lg transition-colors touch-manipulation"
+              title="Refresh"
+            >
+              <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         </div>
 
         {/* Filters */}
@@ -124,17 +135,19 @@ export default function RiwayatPage() {
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-          {stats.map(s => (
-            <div key={s.label} className={`${s.bg} rounded-xl p-3 sm:p-4`}>
-              <p className={`text-xs font-medium ${s.sub}`}>{s.label}</p>
-              <p className={`text-2xl sm:text-3xl font-bold mt-0.5 ${s.text}`}>
-                {loading ? '…' : s.value}
-              </p>
-            </div>
-          ))}
-        </div>
+        {/* Stats (Hidden by default) */}
+        {showStats && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+            {stats.map(s => (
+              <div key={s.label} className={`${s.bg} rounded-xl p-3 sm:p-4`}>
+                <p className={`text-xs font-medium ${s.sub}`}>{s.label}</p>
+                <p className={`text-2xl sm:text-3xl font-bold mt-0.5 ${s.text}`}>
+                  {loading ? '…' : s.value}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Data */}
         <div className="bg-white rounded-xl shadow-sm overflow-hidden">

@@ -13,7 +13,10 @@ import {
   Hourglass, 
   Loader2, 
   AlertCircle,
-  Trash2
+  Trash2,
+  BarChart2,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 
@@ -36,6 +39,7 @@ export default function AdminUsersPage() {
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('ALL');
+  const [showStats, setShowStats] = useState(false);
   
   // Track action state for individual users
   const [actioningUserId, setActioningUserId] = useState<string | null>(null);
@@ -259,58 +263,73 @@ export default function AdminUsersPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">Manajemen Pengguna</h1>
-        <p className="text-slate-500 text-sm mt-1">Validasi dan kelola akun karyawan sistem CH Alam Juanda</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">Manajemen Pengguna</h1>
+          <p className="text-slate-500 text-sm mt-1">Validasi dan kelola akun karyawan sistem CH Alam Juanda</p>
+        </div>
+
+        <button
+          onClick={() => setShowStats(v => !v)}
+          className="flex items-center justify-center gap-2 px-4 py-2.5 border border-slate-200 bg-white rounded-xl text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-colors shadow-sm cursor-pointer self-start sm:self-auto"
+        >
+          <BarChart2 className="w-4 h-4 text-indigo-600" />
+          <span>{showStats ? 'Sembunyikan Statistik' : 'Tampilkan Statistik'}</span>
+          {showStats
+            ? <ChevronUp className="w-4 h-4 text-slate-400" />
+            : <ChevronDown className="w-4 h-4 text-slate-400" />}
+        </button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        
-        {/* Total Users */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
-            <Users className="w-6 h-6" />
+      {/* Stats Cards (Hidden by default) */}
+      {showStats && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          
+          {/* Total Users */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
+              <Users className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-500 font-medium">Total Pengguna</p>
+              <p className="text-2xl font-bold text-slate-950 mt-0.5">{totalUsers}</p>
+            </div>
           </div>
-          <div>
-            <p className="text-xs text-slate-500 font-medium">Total Pengguna</p>
-            <p className="text-2xl font-bold text-slate-950 mt-0.5">{totalUsers}</p>
-          </div>
-        </div>
 
-        {/* Pending Validation */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 shrink-0">
-            <Hourglass className="w-6 h-6" />
+          {/* Pending Validation */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 shrink-0">
+              <Hourglass className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-500 font-medium">Menunggu Validasi</p>
+              <p className="text-2xl font-bold text-slate-950 mt-0.5">{pendingCount}</p>
+            </div>
           </div>
-          <div>
-            <p className="text-xs text-slate-500 font-medium">Menunggu Validasi</p>
-            <p className="text-2xl font-bold text-slate-950 mt-0.5">{pendingCount}</p>
-          </div>
-        </div>
 
-        {/* Approved */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center text-green-600 shrink-0">
-            <UserCheck className="w-6 h-6" />
+          {/* Approved */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center text-green-600 shrink-0">
+              <UserCheck className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-500 font-medium">Disetujui / Aktif</p>
+              <p className="text-2xl font-bold text-slate-950 mt-0.5">{approvedCount}</p>
+            </div>
           </div>
-          <div>
-            <p className="text-xs text-slate-500 font-medium">Disetujui / Aktif</p>
-            <p className="text-2xl font-bold text-slate-950 mt-0.5">{approvedCount}</p>
-          </div>
-        </div>
 
-        {/* Rejected */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center text-red-600 shrink-0">
-            <UserMinus className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-xs text-slate-500 font-medium">Ditolak</p>
-            <p className="text-2xl font-bold text-slate-950 mt-0.5">{rejectedCount}</p>
+          {/* Rejected */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center text-red-600 shrink-0">
+              <UserMinus className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-500 font-medium">Ditolak</p>
+              <p className="text-2xl font-bold text-slate-950 mt-0.5">{rejectedCount}</p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Error display */}
       {error && (

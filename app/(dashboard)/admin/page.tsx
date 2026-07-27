@@ -281,14 +281,14 @@ export default function AdminDashboardPage() {
       {/* Stats Cards Grid */}
       {stats && (
         <div>
-          {/* Mobile toggle button */}
-          <div className="sm:hidden mb-3">
+          {/* Toggle button */}
+          <div className="mb-3">
             <button
               onClick={() => setShowStats(v => !v)}
-              className="w-full flex items-center justify-between px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-colors shadow-sm"
+              className="w-full sm:w-auto flex items-center justify-between sm:justify-start gap-3 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-colors shadow-sm cursor-pointer"
             >
               <div className="flex items-center gap-2">
-                <BarChart2 className="w-4 h-4 text-indigo-500" />
+                <BarChart2 className="w-4 h-4 text-indigo-600" />
                 <span>{showStats ? 'Sembunyikan Statistik' : 'Tampilkan Statistik'}</span>
               </div>
               {showStats
@@ -297,10 +297,9 @@ export default function AdminDashboardPage() {
             </button>
           </div>
 
-          {/* Cards: always visible on sm+, togglable on mobile */}
-          <div className={`grid grid-cols-2 lg:grid-cols-5 gap-4 ${
-            showStats ? 'block' : 'hidden sm:grid'
-          }`}>
+          {/* Cards: hidden by default on all screen sizes */}
+          {showStats && (
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
             {/* Total Employees */}
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">

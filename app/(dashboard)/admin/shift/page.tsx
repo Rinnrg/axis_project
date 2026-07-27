@@ -100,13 +100,6 @@ export default function AdminShiftPage() {
       {/* Header Navigation */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-1">
-          <Link
-            href="/admin"
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors mb-1"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Kembali ke Dashboard Admin
-          </Link>
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2.5">
             <Clock className="w-8 h-8 text-indigo-600" />
             Pengaturan Shift Karyawan
@@ -128,7 +121,7 @@ export default function AdminShiftPage() {
       <form onSubmit={handleSave} className="space-y-8">
         {/* Main Grid for Shift 1 & Shift 2 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          
+
           {/* SHIFT 1 CARD */}
           <div className="bg-white rounded-3xl border border-amber-200/80 shadow-lg shadow-amber-500/5 overflow-hidden transition-all duration-300 hover:shadow-xl">
             <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-6 text-white relative overflow-hidden">
@@ -281,21 +274,6 @@ export default function AdminShiftPage() {
             </div>
           </div>
 
-        </div>
-
-        {/* Info Banner */}
-        <div className="bg-indigo-50/70 border border-indigo-200 rounded-2xl p-5 flex items-start gap-4 text-indigo-900">
-          <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-md">
-            <Shield className="w-5 h-5" />
-          </div>
-          <div className="space-y-1 text-xs sm:text-sm">
-            <h3 className="font-bold text-indigo-950">Mekanisme Pemilihan Shift Karyawan:</h3>
-            <p className="text-indigo-800 leading-relaxed">
-              1. Saat karyawan membuka dashboard, modal pop-up pemilihan shift akan otomatis muncul jika belum memilih shift hari ini.
-              <br />
-              2. Pilihan shift tersimpan untuk hari berjalan. Setelah jam shift selesai atau keesokan harinya, pop-up pemilihan shift akan muncul kembali.
-            </p>
-          </div>
         </div>
 
         {/* Action Button */}

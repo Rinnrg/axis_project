@@ -22,6 +22,8 @@ import {
   Phone,
   Mail,
   ChevronDown,
+  ChevronUp,
+  BarChart2,
   ExternalLink,
   Paperclip,
   Users,
@@ -79,6 +81,7 @@ export default function AdminReportPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [typeFilter, setTypeFilter] = useState<'ALL' | 'PUBLIC' | 'INTERNAL'>('ALL');
+  const [showStats, setShowStats] = useState(false);
 
   // Edit Modal State
   const [selectedReport, setSelectedReport] = useState<ReportItem | null>(null);
@@ -255,35 +258,48 @@ export default function AdminReportPage() {
               Pantau dan tindak lanjuti laporan dari pelanggan (tanpa login) serta keluhan internal karyawan.
             </p>
           </div>
+
+          <button
+            onClick={() => setShowStats(v => !v)}
+            className="flex items-center justify-center gap-2 px-4 py-2.5 border border-slate-200 bg-white rounded-xl text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-colors shadow-sm cursor-pointer self-start sm:self-auto"
+          >
+            <BarChart2 className="w-4 h-4 text-indigo-600" />
+            <span>{showStats ? 'Sembunyikan Statistik' : 'Tampilkan Statistik'}</span>
+            {showStats
+              ? <ChevronUp className="w-4 h-4 text-slate-400" />
+              : <ChevronDown className="w-4 h-4 text-slate-400" />}
+          </button>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Laporan</p>
-            <p className="text-2xl font-bold text-slate-900 mt-1">{stats.total}</p>
+        {/* Stats Grid (Hidden by default) */}
+        {showStats && (
+          <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Laporan</p>
+              <p className="text-2xl font-bold text-slate-900 mt-1">{stats.total}</p>
+            </div>
+            <div className="bg-purple-50/90 p-4 rounded-xl border border-purple-200 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wider text-purple-700">Pelanggan</p>
+              <p className="text-2xl font-bold text-purple-900 mt-1">{stats.publicCount}</p>
+            </div>
+            <div className="bg-blue-50/90 p-4 rounded-xl border border-blue-200 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wider text-blue-700">Karyawan</p>
+              <p className="text-2xl font-bold text-blue-900 mt-1">{stats.internalCount}</p>
+            </div>
+            <div className="bg-amber-50/90 p-4 rounded-xl border border-amber-200 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wider text-amber-700">Terbuka</p>
+              <p className="text-2xl font-bold text-amber-900 mt-1">{stats.open}</p>
+            </div>
+            <div className="bg-sky-50/90 p-4 rounded-xl border border-sky-200 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wider text-sky-700">Diproses</p>
+              <p className="text-2xl font-bold text-sky-900 mt-1">{stats.inProgress}</p>
+            </div>
+            <div className="bg-emerald-50/90 p-4 rounded-xl border border-emerald-200 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700">Selesai</p>
+              <p className="text-2xl font-bold text-emerald-900 mt-1">{stats.resolved}</p>
+            </div>
           </div>
-          <div className="bg-purple-50/90 p-4 rounded-xl border border-purple-200 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-wider text-purple-700">Pelanggan</p>
-            <p className="text-2xl font-bold text-purple-900 mt-1">{stats.publicCount}</p>
-          </div>
-          <div className="bg-blue-50/90 p-4 rounded-xl border border-blue-200 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-wider text-blue-700">Karyawan</p>
-            <p className="text-2xl font-bold text-blue-900 mt-1">{stats.internalCount}</p>
-          </div>
-          <div className="bg-amber-50/90 p-4 rounded-xl border border-amber-200 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-wider text-amber-700">Terbuka</p>
-            <p className="text-2xl font-bold text-amber-900 mt-1">{stats.open}</p>
-          </div>
-          <div className="bg-sky-50/90 p-4 rounded-xl border border-sky-200 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-wider text-sky-700">Diproses</p>
-            <p className="text-2xl font-bold text-sky-900 mt-1">{stats.inProgress}</p>
-          </div>
-          <div className="bg-emerald-50/90 p-4 rounded-xl border border-emerald-200 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700">Selesai</p>
-            <p className="text-2xl font-bold text-emerald-900 mt-1">{stats.resolved}</p>
-          </div>
-        </div>
+        )}
 
         {/* Filters Panel */}
         <div className="bg-white rounded-xl shadow-sm p-4 sm:p-5 border border-slate-200 flex flex-col md:flex-row gap-4 justify-between items-center">

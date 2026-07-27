@@ -19,10 +19,14 @@ import {
   Users,
   ListFilter,
   CheckCircle,
+  BarChart2,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
 export default function RekapPage() {
   const [filterType, setFilterType] = useState<'month' | 'date' | 'year' | 'all'>('month');
+  const [showStats, setShowStats] = useState(false);
   
   const [month, setMonth] = useState(() => {
     const d = new Date();
@@ -204,6 +208,7 @@ export default function RekapPage() {
         Nama: item.employeeName,
         Nomor: item.employee?.phone || item.phone || '-',
         Jabatan: formattedPos,
+        Shift: item.shiftName || item.shift || '-',
         Hadir: isHadir ? (item.checkInTime ? `✓ (${item.checkInTime})` : '✓') : '-',
         Izin: isIzin ? '✓' : '-',
         Sakit: isSakit ? '✓' : '-',
@@ -292,14 +297,14 @@ export default function RekapPage() {
       .map(
         (emp, idx) => `
       <tr>
-        <td style="text-align: center;">${idx + 1}</td>
-        <td style="font-weight: bold; color: #0f172a;">${emp.name}</td>
-        <td>${emp.position}</td>
-        <td style="text-align: center; font-weight: bold; color: #047857;">${emp.hadir}</td>
-        <td style="text-align: center; font-weight: bold; color: #1d4ed8;">${emp.izin}</td>
-        <td style="text-align: center; font-weight: bold; color: #be123c;">${emp.sakit}</td>
-        <td style="text-align: center; font-weight: bold; color: #6d28d9;">${emp.cuti}</td>
-        <td style="text-align: center; font-weight: bold; color: #b45309;">${emp.telat}</td>
+        <td style="text-align: center; color: #000000;">${idx + 1}</td>
+        <td style="font-weight: bold; color: #000000;">${emp.name}</td>
+        <td style="color: #000000;">${emp.position}</td>
+        <td style="text-align: center; font-weight: bold; color: #000000;">${emp.hadir}</td>
+        <td style="text-align: center; font-weight: bold; color: #000000;">${emp.izin}</td>
+        <td style="text-align: center; font-weight: bold; color: #000000;">${emp.sakit}</td>
+        <td style="text-align: center; font-weight: bold; color: #000000;">${emp.cuti}</td>
+        <td style="text-align: center; font-weight: bold; color: #000000;">${emp.telat}</td>
       </tr>
     `
       )
@@ -316,39 +321,43 @@ export default function RekapPage() {
             size: A4 portrait;
             margin: 15mm;
           }
+          * {
+            box-sizing: border-box;
+            color: #000000 !important;
+          }
           body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            color: #1e293b;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #000000;
             margin: 0;
-            padding: 20px;
+            padding: 10px;
             font-size: 12px;
-            background: #fff;
+            background: #ffffff;
           }
           .header {
             text-align: center;
             margin-bottom: 24px;
-            border-bottom: 2px solid #0f172a;
+            border-bottom: 2px solid #000000;
             padding-bottom: 12px;
           }
           .header h1 {
             margin: 0;
-            font-size: 20px;
-            font-weight: 800;
+            font-size: 18px;
+            font-weight: bold;
             text-transform: uppercase;
             letter-spacing: 1px;
-            color: #0f172a;
+            color: #000000;
           }
           .header h2 {
             margin: 4px 0 0 0;
             font-size: 14px;
-            font-weight: 600;
-            color: #475569;
+            font-weight: normal;
+            color: #000000;
           }
           .header p {
             margin: 6px 0 0 0;
             font-size: 12px;
-            color: #4338ca;
-            font-weight: 700;
+            color: #000000;
+            font-weight: bold;
           }
           table {
             width: 100%;
@@ -356,31 +365,34 @@ export default function RekapPage() {
             margin-top: 10px;
           }
           th, td {
-            border: 1px solid #cbd5e1;
+            border: 1px solid #000000;
             padding: 8px 10px;
             text-align: left;
+            color: #000000;
           }
           th {
-            background-color: #f1f5f9;
-            font-weight: 700;
+            background-color: #f2f2f2;
+            font-weight: bold;
             font-size: 11px;
             text-transform: uppercase;
-            color: #334155;
+            color: #000000;
           }
           tfoot tr td {
-            background-color: #f8fafc;
-            font-weight: 800;
+            background-color: #f2f2f2;
+            font-weight: bold;
             font-size: 12px;
-            border-top: 2px solid #0f172a;
+            border-top: 2px solid #000000;
+            color: #000000;
           }
           .signature-section {
             margin-top: 40px;
             page-break-inside: avoid;
           }
           .sig-header {
-            font-weight: 700;
+            font-weight: bold;
             font-size: 12px;
             margin-bottom: 15px;
+            color: #000000;
           }
           .signatures-grid {
             display: flex;
@@ -392,19 +404,19 @@ export default function RekapPage() {
             text-align: left;
           }
           .sig-title {
-            font-weight: 700;
+            font-weight: bold;
             font-size: 12px;
-            color: #1e293b;
+            color: #000000;
             line-height: 1.5;
           }
           .sig-space {
             height: 65px;
           }
           .sig-name {
-            font-weight: 800;
+            font-weight: bold;
             font-size: 13px;
             text-decoration: underline;
-            color: #0f172a;
+            color: #000000;
           }
           @media print {
             body { padding: 0; }
@@ -650,7 +662,18 @@ export default function RekapPage() {
               Kelola, saring per tanggal/bulan/tahun, cetak laporan PDF, dan export data presensi karyawan.
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => setShowStats(v => !v)}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 border border-slate-200 bg-white rounded-xl text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-colors shadow-sm cursor-pointer"
+            >
+              <BarChart2 className="w-4 h-4 text-indigo-600" />
+              <span>{showStats ? 'Sembunyikan Ringkasan' : 'Tampilkan Ringkasan'}</span>
+              {showStats
+                ? <ChevronUp className="w-4 h-4 text-slate-400" />
+                : <ChevronDown className="w-4 h-4 text-slate-400" />}
+            </button>
+
             <Button
               onClick={() => setShowPdfModal(true)}
               className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2.5 rounded-xl shadow-sm flex items-center gap-2 cursor-pointer transition-all"
@@ -668,28 +691,30 @@ export default function RekapPage() {
           </div>
         </div>
 
-        {/* Statistics */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 sm:gap-4">
-          {[
-            { label: 'Total Data', value: stats.total, color: 'slate' },
-            { label: 'Hadir', value: stats.hadir, color: 'emerald' },
-            { label: 'Telat', value: stats.telat, color: 'amber' },
-            { label: 'Izin', value: stats.izinApproved, color: 'blue' },
-            { label: 'Sakit', value: stats.sakit, color: 'rose' },
-            { label: 'Cuti', value: stats.cuti, color: 'violet' },
-            { label: 'Alpha', value: stats.alpha, color: 'red' },
-          ].map((stat) => (
-            <div
-              key={stat.label}
-              className={`border rounded-xl p-3.5 transition-all duration-300 hover:shadow-xs ${getStatCardColors(stat.color)}`}
-            >
-              <p className="text-[11px] font-bold uppercase tracking-wider opacity-80">{stat.label}</p>
-              <p className={`text-2xl font-extrabold mt-1 ${getStatTextColors(stat.color)}`}>
-                {stat.value}
-              </p>
-            </div>
-          ))}
-        </div>
+        {/* Statistics (Hidden by default) */}
+        {showStats && (
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 sm:gap-4">
+            {[
+              { label: 'Total Data', value: stats.total, color: 'slate' },
+              { label: 'Hadir', value: stats.hadir, color: 'emerald' },
+              { label: 'Telat', value: stats.telat, color: 'amber' },
+              { label: 'Izin', value: stats.izinApproved, color: 'blue' },
+              { label: 'Sakit', value: stats.sakit, color: 'rose' },
+              { label: 'Cuti', value: stats.cuti, color: 'violet' },
+              { label: 'Alpha', value: stats.alpha, color: 'red' },
+            ].map((stat) => (
+              <div
+                key={stat.label}
+                className={`border rounded-xl p-3.5 transition-all duration-300 hover:shadow-xs ${getStatCardColors(stat.color)}`}
+              >
+                <p className="text-[11px] font-bold uppercase tracking-wider opacity-80">{stat.label}</p>
+                <p className={`text-2xl font-extrabold mt-1 ${getStatTextColors(stat.color)}`}>
+                  {stat.value}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Filter Controls Bar */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6 space-y-4">
@@ -1009,6 +1034,7 @@ export default function RekapPage() {
                       <th className="px-5 py-3.5 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Nama Karyawan</th>
                       <th className="px-5 py-3.5 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Role / Jabatan</th>
                       <th className="px-5 py-3.5 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Tanggal</th>
+                      <th className="px-5 py-3.5 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Shift</th>
                       <th className="px-5 py-3.5 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Jam Masuk</th>
                       <th className="px-5 py-3.5 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Jam Pulang</th>
                       <th className="px-5 py-3.5 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Status</th>
@@ -1042,6 +1068,11 @@ export default function RekapPage() {
                             day: 'numeric',
                             timeZone: 'UTC',
                           })}
+                        </td>
+                        <td className="px-5 py-4 text-xs font-semibold text-slate-700">
+                          <span className="inline-block px-2.5 py-1 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg text-[11px] font-bold uppercase">
+                            {item.shiftName || item.shift || '-'}
+                          </span>
                         </td>
                         <td className="px-5 py-4 text-xs text-slate-700 font-mono font-bold">
                           {item.checkInTime || '-'}
@@ -1253,57 +1284,57 @@ export default function RekapPage() {
               <div className="bg-white p-8 md:p-12 shadow-md rounded-lg max-w-3xl mx-auto border border-slate-300 font-sans text-slate-900 text-sm space-y-6">
                 
                 {/* PDF Title Header */}
-                <div className="text-center border-b-2 border-slate-900 pb-4">
-                  <h1 className="text-xl md:text-2xl font-black uppercase tracking-wider text-slate-900">
+                <div className="text-center border-b-2 border-black pb-4">
+                  <h1 className="text-xl md:text-2xl font-bold uppercase tracking-wider text-black">
                     LAPORAN REKAP PRESENSI KARYAWAN
                   </h1>
-                  <h2 className="text-sm font-semibold text-slate-600 mt-1">
+                  <h2 className="text-sm font-semibold text-black mt-1">
                     PT. AXIS PROJECT
                   </h2>
-                  <p className="text-xs font-bold text-indigo-700 mt-2">
+                  <p className="text-xs font-bold text-black mt-2">
                     Periode: {getPeriodeText()}
                   </p>
                 </div>
 
                 {/* PDF Rekap Table */}
                 <div className="overflow-x-auto">
-                  <table className="w-full border-collapse border border-slate-300 text-xs">
+                  <table className="w-full border-collapse border border-black text-xs text-black">
                     <thead>
-                      <tr className="bg-slate-100 border-b border-slate-300 text-slate-800">
-                        <th className="border border-slate-300 px-3 py-2 text-center w-10">No</th>
-                        <th className="border border-slate-300 px-3 py-2 text-left">Nama</th>
-                        <th className="border border-slate-300 px-3 py-2 text-left">Jabatan</th>
-                        <th className="border border-slate-300 px-3 py-2 text-center w-14">Hadir</th>
-                        <th className="border border-slate-300 px-3 py-2 text-center w-14">Izin</th>
-                        <th className="border border-slate-300 px-3 py-2 text-center w-14">Sakit</th>
-                        <th className="border border-slate-300 px-3 py-2 text-center w-14">Cuti</th>
-                        <th className="border border-slate-300 px-3 py-2 text-center w-28">Keterangan (Telat)</th>
+                      <tr className="bg-slate-100 border-b border-black text-black">
+                        <th className="border border-black px-3 py-2 text-center w-10">No</th>
+                        <th className="border border-black px-3 py-2 text-left">Nama</th>
+                        <th className="border border-black px-3 py-2 text-left">Jabatan</th>
+                        <th className="border border-black px-3 py-2 text-center w-14">Hadir</th>
+                        <th className="border border-black px-3 py-2 text-center w-14">Izin</th>
+                        <th className="border border-black px-3 py-2 text-center w-14">Sakit</th>
+                        <th className="border border-black px-3 py-2 text-center w-14">Cuti</th>
+                        <th className="border border-black px-3 py-2 text-center w-28">Keterangan (Telat)</th>
                       </tr>
                     </thead>
                     <tbody>
                       {employeeRekapList.map((emp, idx) => (
-                        <tr key={emp.id} className="border-b border-slate-200">
-                          <td className="border border-slate-300 px-3 py-2 text-center font-semibold text-slate-600">{idx + 1}</td>
-                          <td className="border border-slate-300 px-3 py-2 font-bold text-slate-900">{emp.name}</td>
-                          <td className="border border-slate-300 px-3 py-2 text-slate-700">{emp.position}</td>
-                          <td className="border border-slate-300 px-3 py-2 text-center font-bold text-emerald-700">{emp.hadir}</td>
-                          <td className="border border-slate-300 px-3 py-2 text-center font-bold text-blue-700">{emp.izin}</td>
-                          <td className="border border-slate-300 px-3 py-2 text-center font-bold text-rose-700">{emp.sakit}</td>
-                          <td className="border border-slate-300 px-3 py-2 text-center font-bold text-violet-700">{emp.cuti}</td>
-                          <td className="border border-slate-300 px-3 py-2 text-center font-bold text-amber-700">{emp.telat}</td>
+                        <tr key={emp.id} className="border-b border-black">
+                          <td className="border border-black px-3 py-2 text-center font-semibold text-black">{idx + 1}</td>
+                          <td className="border border-black px-3 py-2 font-bold text-black">{emp.name}</td>
+                          <td className="border border-black px-3 py-2 text-black">{emp.position}</td>
+                          <td className="border border-black px-3 py-2 text-center font-bold text-black">{emp.hadir}</td>
+                          <td className="border border-black px-3 py-2 text-center font-bold text-black">{emp.izin}</td>
+                          <td className="border border-black px-3 py-2 text-center font-bold text-black">{emp.sakit}</td>
+                          <td className="border border-black px-3 py-2 text-center font-bold text-black">{emp.cuti}</td>
+                          <td className="border border-black px-3 py-2 text-center font-bold text-black">{emp.telat}</td>
                         </tr>
                       ))}
                     </tbody>
                     <tfoot>
-                      <tr className="bg-slate-100 border-t-2 border-slate-900 font-extrabold text-slate-900">
-                        <td colSpan={3} className="border border-slate-300 px-3 py-2.5 text-right uppercase">
+                      <tr className="bg-slate-100 border-t-2 border-black font-bold text-black">
+                        <td colSpan={3} className="border border-black px-3 py-2.5 text-right uppercase">
                           TOTAL
                         </td>
-                        <td className="border border-slate-300 px-3 py-2.5 text-center text-emerald-800 font-extrabold">{totalSummary.hadir}</td>
-                        <td className="border border-slate-300 px-3 py-2.5 text-center text-blue-800 font-extrabold">{totalSummary.izin}</td>
-                        <td className="border border-slate-300 px-3 py-2.5 text-center text-rose-800 font-extrabold">{totalSummary.sakit}</td>
-                        <td className="border border-slate-300 px-3 py-2.5 text-center text-violet-800 font-extrabold">{totalSummary.cuti}</td>
-                        <td className="border border-slate-300 px-3 py-2.5 text-center text-amber-800 font-extrabold">{totalSummary.telat}</td>
+                        <td className="border border-black px-3 py-2.5 text-center font-bold text-black">{totalSummary.hadir}</td>
+                        <td className="border border-black px-3 py-2.5 text-center font-bold text-black">{totalSummary.izin}</td>
+                        <td className="border border-black px-3 py-2.5 text-center font-bold text-black">{totalSummary.sakit}</td>
+                        <td className="border border-black px-3 py-2.5 text-center font-bold text-black">{totalSummary.cuti}</td>
+                        <td className="border border-black px-3 py-2.5 text-center font-bold text-black">{totalSummary.telat}</td>
                       </tr>
                     </tfoot>
                   </table>
@@ -1311,28 +1342,28 @@ export default function RekapPage() {
 
                 {/* PDF Signatures Block */}
                 <div className="pt-6 space-y-4">
-                  <p className="font-bold text-xs text-slate-800">Mengetahui,</p>
+                  <p className="font-bold text-xs text-black">Mengetahui,</p>
                   <div className="flex justify-between items-start pt-2">
                     {/* Manager Signature (Left) */}
                     <div className="w-1/2 pr-4">
-                      <p className="font-bold text-xs leading-relaxed text-slate-900">
+                      <p className="font-bold text-xs leading-relaxed text-black">
                         Sidoarjo, {currentDateFormatted}<br />
                         Manager
                       </p>
                       <div className="h-16"></div>
-                      <p className="font-extrabold text-xs underline text-slate-900">
+                      <p className="font-bold text-xs underline text-black">
                         Rino Raihan G.
                       </p>
                     </div>
 
                     {/* Ast Manager Signature (Right) */}
                     <div className="w-1/2 pl-4">
-                      <p className="font-bold text-xs leading-relaxed text-slate-900">
+                      <p className="font-bold text-xs leading-relaxed text-black">
                         <br />
                         Ast Manager
                       </p>
                       <div className="h-16"></div>
-                      <p className="font-extrabold text-xs underline text-slate-900">
+                      <p className="font-bold text-xs underline text-black">
                         Aldan Nur Sajidan
                       </p>
                     </div>
