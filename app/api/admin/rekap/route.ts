@@ -16,15 +16,22 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
     const monthParam = searchParams.get('month') // e.g. "2024-07" or "all"
+    const dateParam = searchParams.get('date')   // e.g. "2024-07-27"
 
-    const isAll = monthParam === 'all'
+    const isAll = monthParam === 'all' && !dateParam
 
     let year = 0
     let month = 0
     let startDate = new Date()
     let endDate = new Date()
 
-    if (!isAll) {
+    if (dateParam) {
+      const [y, m, d] = dateParam.split('-').map(Number)
+      startDate = new Date(Date.UTC(y, m - 1, d))
+      endDate = new Date(Date.UTC(y, m - 1, d + 1))
+      year = y
+      month = m
+    } else if (!isAll) {
       if (monthParam) {
         const parts = monthParam.split('-')
         year = parseInt(parts[0], 10)
@@ -112,7 +119,7 @@ export async function GET(req: NextRequest) {
         date: fmtDate(att.date),
         checkInTime: fmtTime(att.checkInTime),
         checkOutTime: fmtTime(att.checkOutTime),
-        status: att.status.toLowerCase(),
+        status: (att.status || 'HADIR').toLowerCase(),
         notes: att.notes || '',
         permissionType: null,
         permissionReason: null,
@@ -123,14 +130,13 @@ export async function GET(req: NextRequest) {
     }
 
     // Process ALL approved permissions: generate a dedicated row per day of each permission.
-    // These always appear in rekap — separate from attendance records.
     for (const perm of permissions) {
       const emp = employeeMap.get(perm.userId)
       if (!emp) continue
 
       // Calculate the start and end dates within the current month/range
       const start = (isAll || perm.startDate > startDate) ? perm.startDate : startDate
-      const end = (isAll || perm.endDate < endDate) ? perm.endDate : new Date(Date.UTC(year, month - 1, 31))
+      const end = (isAll || perm.endDate < endDate) ? perm.endDate : (dateParam ? endDate : new Date(Date.UTC(year, month - 1, 31)))
 
       // Loop through each day of the permission
       const curr = new Date(start.getTime())
