@@ -47,10 +47,12 @@ export async function GET(req: NextRequest) {
       orderBy: { date: 'desc' },
     })
 
-    const formatted = records.map(r => ({
+    const formatted = records.map((r: any) => ({
       id:           r.id,
       userId:       r.userId,
       date:         fmtDate(r.date),
+      shift:        r.shift ?? null,
+      shiftName:    r.shiftName ?? null,
       checkInTime:  fmtTime(r.checkInTime),
       checkOutTime: fmtTime(r.checkOutTime),
       status:       r.status.toLowerCase() as 'hadir' | 'telat' | 'izin' | 'alpha',
@@ -108,8 +110,34 @@ export async function POST(req: NextRequest) {
     }
 
     if (type === 'checkin') {
-      // Determine status: TELAT if after 08:30
-      const cutoff = new Date(1970, 0, 1, 8, 30, 0)
+      // Find existing attendance to check selected shift
+      const existing = await (prisma as any).attendance.findUnique({
+        where: { userId_date: { userId, date: today } },
+      })
+
+      // Fetch shift configuration
+      let config = await (prisma as any).shiftConfig.findUnique({
+        where: { id: 'default' },
+      })
+      if (!config) {
+        config = {
+          shift1Name: 'Shift 1',
+          shift1Start: '07:00',
+          shift1End: '15:00',
+          shift2Name: 'Shift 2',
+          shift2Start: '15:00',
+          shift2End: '23:00',
+        }
+      }
+
+      // Determine check-in cutoff time based on user's shift selection
+      let startTimeStr = config.shift1Start || '07:00'
+      if (existing?.shift === 'SHIFT_2') {
+        startTimeStr = config.shift2Start || '15:00'
+      }
+
+      const [startH, startM] = startTimeStr.split(':').map(Number)
+      const cutoff = new Date(1970, 0, 1, startH || 7, startM || 0, 0)
       const status = timeValue > cutoff ? 'TELAT' : 'HADIR'
 
       let checkInPhoto: string | null = null
@@ -118,7 +146,7 @@ export async function POST(req: NextRequest) {
         checkInPhoto = await uploadToBucket(photo, fileName)
       }
 
-      const record = await prisma.attendance.upsert({
+      const record = await (prisma as any).attendance.upsert({
         where:  { userId_date: { userId, date: today } },
         update: { checkInTime: timeValue, status, notes: '', checkInPhoto },
         create: { userId, date: today, checkInTime: timeValue, status, notes: '', checkInPhoto },

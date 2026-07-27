@@ -86,6 +86,8 @@ model Attendance {
   id           String           @id @default(cuid())
   userId       String
   date         DateTime         @db.Date
+  shift        String?          // e.g. "SHIFT_1" or "SHIFT_2"
+  shiftName    String?          // e.g. "Shift 1 (07:00 - 15:00)"
   checkInTime  DateTime?        @db.Time
   checkOutTime DateTime?        @db.Time
   status       AttendanceStatus @default(HADIR)
@@ -188,3 +190,21 @@ enum ReportStatus {
   RESOLVED
   CLOSED
 }
+
+// ============================================================
+// SHIFT CONFIGURATION
+// ============================================================
+model ShiftConfig {
+  id          String   @id @default("default")
+  shift1Name  String   @default("Shift 1")
+  shift1Start String   @default("07:00")
+  shift1End   String   @default("15:00")
+  shift2Name  String   @default("Shift 2")
+  shift2Start String   @default("15:00")
+  shift2End   String   @default("23:00")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("shift_configs")
+}
+

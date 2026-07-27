@@ -253,13 +253,22 @@ export default function AdminDashboardPage() {
           <h1 className="text-3xl font-bold text-slate-900">Dashboard Admin</h1>
           <p className="text-slate-500 text-sm mt-1">Ikhtisar kehadiran harian, persetujuan, & laporan pengaduan</p>
         </div>
-        <button
-          onClick={() => fetchDashboardData()}
-          className="flex items-center justify-center gap-1.5 px-4 py-2 border border-slate-200 bg-white rounded-xl text-slate-600 text-sm font-semibold hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-sm self-start sm:self-auto"
-        >
-          <RefreshCw className="w-4 h-4" />
-          <span>Segarkan Data</span>
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <Link
+            href="/admin/shift"
+            className="flex items-center justify-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm"
+          >
+            <Clock className="w-4 h-4" />
+            <span>Pengaturan Shift</span>
+          </Link>
+          <button
+            onClick={() => fetchDashboardData()}
+            className="flex items-center justify-center gap-1.5 px-4 py-2 border border-slate-200 bg-white rounded-xl text-slate-600 text-sm font-semibold hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-sm"
+          >
+            <RefreshCw className="w-4 h-4" />
+            <span>Segarkan Data</span>
+          </button>
+        </div>
       </div>
 
       {error && (

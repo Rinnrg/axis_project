@@ -5,14 +5,17 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { ClockWidget } from '@/components/clock-widget';
 import { AttendanceCamera } from '@/components/attendance-camera';
+import { ShiftSelectionModal } from '@/components/shift-selection-modal';
 import Swal from 'sweetalert2';
 import {
-  CheckCircle, Clock, AlertCircle, FileText, Calendar, LogIn, LogOut, Megaphone, ArrowRight, Sparkles, ShieldCheck
+  CheckCircle, Clock, AlertCircle, FileText, Calendar, LogIn, LogOut, Megaphone, ArrowRight, Sparkles, ShieldCheck, Sun, Moon, Edit3
 } from 'lucide-react';
 import Link from 'next/link';
 
 interface TodayAttendance {
   id?: string;
+  shift?: string | null;
+  shiftName?: string | null;
   checkInTime: string | null;
   checkOutTime: string | null;
   status: string;
@@ -25,6 +28,7 @@ export default function DashboardPage() {
   const [cameraOpen, setCameraOpen] = useState<'checkin' | 'checkout' | null>(null);
   const [todayAtt, setTodayAtt] = useState<TodayAttendance | null>(null);
   const [attLoading, setAttLoading] = useState(true);
+  const [shiftModalOpen, setShiftModalOpen] = useState(false);
 
   // ── Redirect admin & chief_admin ─────────────────────────────────────────
   useEffect(() => {
@@ -42,7 +46,13 @@ export default function DashboardPage() {
       const res = await fetch(`/api/attendance?userId=${user.id}&date=${today}`);
       const data = await res.json();
       const records: TodayAttendance[] = data.attendances ?? [];
-      setTodayAtt(records[0] ?? null);
+      const current = records[0] ?? null;
+      setTodayAtt(current);
+
+      // Trigger shift modal if no shift selected for today yet
+      if (!current?.shift) {
+        setShiftModalOpen(true);
+      }
     } catch (err) {
       console.error('Failed to fetch attendance', err);
     } finally {
@@ -156,6 +166,35 @@ export default function DashboardPage() {
             <ClockWidget />
           </div>
         </div>
+
+        {/* Shift Info Banner */}
+        {!attLoading && todayAtt?.shift && (
+          <div className="bg-gradient-to-r from-indigo-900 via-indigo-800 to-slate-900 rounded-2xl p-4 sm:p-5 text-white shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-indigo-500/30">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/30 backdrop-blur-md flex items-center justify-center border border-indigo-400/30 shrink-0">
+                {todayAtt.shift === 'SHIFT_1' ? <Sun className="w-5 h-5 text-amber-300" /> : <Moon className="w-5 h-5 text-indigo-300" />}
+              </div>
+              <div>
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-200 bg-indigo-500/20 px-2 py-0.5 rounded-full border border-indigo-400/30">
+                  Shift Terpilih Hari Ini
+                </span>
+                <h3 className="font-extrabold text-sm sm:text-base text-white mt-0.5">
+                  {todayAtt.shiftName || (todayAtt.shift === 'SHIFT_1' ? 'Shift 1' : 'Shift 2')}
+                </h3>
+              </div>
+            </div>
+
+            {!todayAtt.checkInTime && (
+              <button
+                onClick={() => setShiftModalOpen(true)}
+                className="self-start sm:self-auto px-3.5 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition-all border border-white/20 flex items-center gap-1.5 cursor-pointer backdrop-blur-md"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>Ubah Shift</span>
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Status Banner */}
         {!attLoading && todayAtt && (
@@ -362,6 +401,26 @@ export default function DashboardPage() {
             const type = cameraOpen;
             setCameraOpen(null);
             handleAttendanceSuccess(type, timestamp, photo);
+          }}
+        />
+      )}
+
+      {/* Shift Selection Modal */}
+      {shiftModalOpen && user?.id && (
+        <ShiftSelectionModal
+          userId={user.id}
+          isDismissable={!!todayAtt?.shift}
+          onClose={() => setShiftModalOpen(false)}
+          onShiftSelected={(shift, shiftName) => {
+            setTodayAtt(prev => ({
+              ...(prev || {}),
+              shift,
+              shiftName,
+              checkInTime: prev?.checkInTime ?? null,
+              checkOutTime: prev?.checkOutTime ?? null,
+              status: prev?.status ?? 'hadir',
+            }));
+            setShiftModalOpen(false);
           }}
         />
       )}
