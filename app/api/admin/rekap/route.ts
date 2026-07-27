@@ -15,10 +15,11 @@ function fmtDate(d: Date): string {
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
-    const monthParam = searchParams.get('month') // e.g. "2024-07" or "all"
-    const dateParam = searchParams.get('date')   // e.g. "2024-07-27"
+    const monthParam = searchParams.get('month') // e.g. "2026-07" or "all"
+    const dateParam = searchParams.get('date')   // e.g. "2026-07-27"
+    const yearParam = searchParams.get('year')   // e.g. "2026"
 
-    const isAll = monthParam === 'all' && !dateParam
+    const isAll = monthParam === 'all' && !dateParam && !yearParam
 
     let year = 0
     let month = 0
@@ -31,18 +32,28 @@ export async function GET(req: NextRequest) {
       endDate = new Date(Date.UTC(y, m - 1, d + 1))
       year = y
       month = m
+    } else if (yearParam) {
+      year = parseInt(yearParam, 10)
+      startDate = new Date(Date.UTC(year, 0, 1))
+      endDate = new Date(Date.UTC(year + 1, 0, 1))
     } else if (!isAll) {
-      if (monthParam) {
+      if (monthParam && monthParam.includes('-')) {
         const parts = monthParam.split('-')
         year = parseInt(parts[0], 10)
         month = parseInt(parts[1], 10)
+        startDate = new Date(Date.UTC(year, month - 1, 1))
+        endDate = new Date(Date.UTC(year, month, 1))
+      } else if (monthParam && monthParam.length === 4) {
+        year = parseInt(monthParam, 10)
+        startDate = new Date(Date.UTC(year, 0, 1))
+        endDate = new Date(Date.UTC(year + 1, 0, 1))
       } else {
         const now = new Date()
         year = now.getFullYear()
         month = now.getMonth() + 1
+        startDate = new Date(Date.UTC(year, month - 1, 1))
+        endDate = new Date(Date.UTC(year, month, 1))
       }
-      startDate = new Date(Date.UTC(year, month - 1, 1))
-      endDate = new Date(Date.UTC(year, month, 1))
     }
 
     // 1. Fetch all employees (users)
@@ -114,6 +125,7 @@ export async function GET(req: NextRequest) {
         employeeId: att.userId,
         employeeName: emp.name,
         email: emp.email,
+        phone: emp.phone || '-',
         position: emp.position || '-',
         department: emp.department || '-',
         date: fmtDate(att.date),
@@ -141,7 +153,7 @@ export async function GET(req: NextRequest) {
       // Loop through each day of the permission
       const curr = new Date(start.getTime())
       let safetyCounter = 0
-      const limit = isAll ? 100 : 35
+      const limit = isAll || yearParam ? 370 : 35
       while (curr <= end && safetyCounter < limit) {
         safetyCounter++
         const dateStr = fmtDate(curr)
@@ -151,6 +163,7 @@ export async function GET(req: NextRequest) {
           employeeId: perm.userId,
           employeeName: emp.name,
           email: emp.email,
+          phone: emp.phone || '-',
           position: emp.position || '-',
           department: emp.department || '-',
           date: dateStr,

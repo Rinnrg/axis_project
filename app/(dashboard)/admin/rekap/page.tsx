@@ -7,25 +7,31 @@ import {
   Download,
   Calendar,
   Search,
-  TrendingUp,
   AlertCircle,
-  CheckCircle,
   Eye,
   X,
   Loader2,
   Trash2,
   FileSpreadsheet,
   RotateCcw,
-  Clock,
+  Printer,
+  FileText,
+  Users,
+  ListFilter,
+  CheckCircle,
 } from 'lucide-react';
 
 export default function RekapPage() {
+  const [filterType, setFilterType] = useState<'month' | 'date' | 'year' | 'all'>('month');
+  
   const [month, setMonth] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   });
   const [selectedDate, setSelectedDate] = useState('');
+  const [selectedYear, setSelectedYear] = useState(() => String(new Date().getFullYear()));
   const [employeeFilter, setEmployeeFilter] = useState('');
+  const [activeTab, setActiveTab] = useState<'rekap' | 'log'>('rekap');
   
   const [rekap, setRekap] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
@@ -33,16 +39,24 @@ export default function RekapPage() {
   const [error, setError] = useState('');
   const [previewImage, setPreviewImage] = useState<{ url: string; title: string } | null>(null);
   const [loadingPhotoId, setLoadingPhotoId] = useState<string | null>(null);
+  const [showPdfModal, setShowPdfModal] = useState(false);
 
-  // Fetch rekap data from API
+  // Fetch rekap data from API based on filter mode
   const fetchRekap = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      let url = `/api/admin/rekap?month=${month}`;
-      if (selectedDate) {
-        url += `&date=${selectedDate}`;
+      let url = '/api/admin/rekap';
+      if (filterType === 'date' && selectedDate) {
+        url += `?date=${selectedDate}`;
+      } else if (filterType === 'year' && selectedYear) {
+        url += `?year=${selectedYear}`;
+      } else if (filterType === 'all') {
+        url += `?month=all`;
+      } else {
+        url += `?month=${month}`;
       }
+
       const res = await fetch(url);
       if (!res.ok) {
         throw new Error('Gagal memuat data rekap presensi');
@@ -56,7 +70,7 @@ export default function RekapPage() {
     } finally {
       setLoading(false);
     }
-  }, [month, selectedDate]);
+  }, [filterType, selectedDate, month, selectedYear]);
 
   useEffect(() => {
     fetchRekap();
@@ -64,45 +78,109 @@ export default function RekapPage() {
     return () => clearInterval(interval);
   }, [fetchRekap]);
 
-  // Filter attendance data on the client side
+  // Filter attendance records on client side
   const filteredAttendance = rekap.filter((a) => {
-    if (selectedDate && a.date !== selectedDate) return false;
+    if (filterType === 'date' && selectedDate && a.date !== selectedDate) return false;
     if (!employeeFilter) return true;
     return a.employeeName.toLowerCase().includes(employeeFilter.toLowerCase());
   });
 
-  // Group by employee using the actual employees list returned from the API
-  const attendanceByEmployee = employees.reduce(
-    (acc, emp) => {
-      const empAttendance = filteredAttendance.filter(
-        (a) => a.employeeId === emp.id
-      );
-      if (empAttendance.length > 0) {
-        acc[emp.id] = {
-          employee: emp,
-          records: empAttendance,
-        };
-      }
-      return acc;
-    },
-    {} as Record<
-      string,
-      { employee: any; records: any[] }
-    >
+  // Calculate Employee-level Summary (Nama, Jabatan, Hadir, Izin, Sakit, Cuti, Telat)
+  const employeeRekapList = employees
+    .filter((emp) => {
+      if (!employeeFilter) return true;
+      return emp.name.toLowerCase().includes(employeeFilter.toLowerCase());
+    })
+    .map((emp) => {
+      const empRecords = filteredAttendance.filter((a) => a.employeeId === emp.id);
+
+      const hadir = empRecords.filter((a) => a.status === 'hadir').length;
+      const telat = empRecords.filter((a) => a.status === 'telat').length;
+      const izin = empRecords.filter(
+        (a) =>
+          (a.status === 'izin' || a.permissionType === 'IZIN') &&
+          a.permissionType !== 'SAKIT' &&
+          a.permissionType !== 'CUTI' &&
+          a.permissionStatus !== 'REJECTED'
+      ).length;
+      const sakit = empRecords.filter(
+        (a) => a.permissionType === 'SAKIT' && a.permissionStatus !== 'REJECTED'
+      ).length;
+      const cuti = empRecords.filter(
+        (a) => a.permissionType === 'CUTI' && a.permissionStatus !== 'REJECTED'
+      ).length;
+
+      return {
+        id: emp.id,
+        name: emp.name,
+        position: emp.position ? emp.position.charAt(0).toUpperCase() + emp.position.slice(1) : '-',
+        hadir,
+        izin,
+        sakit,
+        cuti,
+        telat,
+      };
+    });
+
+  // Totals for employee rekap table footer
+  const totalSummary = employeeRekapList.reduce(
+    (acc, item) => ({
+      hadir: acc.hadir + item.hadir,
+      izin: acc.izin + item.izin,
+      sakit: acc.sakit + item.sakit,
+      cuti: acc.cuti + item.cuti,
+      telat: acc.telat + item.telat,
+    }),
+    { hadir: 0, izin: 0, sakit: 0, cuti: 0, telat: 0 }
   );
 
-  // Calculate statistics from filtered attendance
+  // Overall stats cards
   const stats = {
     total: filteredAttendance.length,
     hadir: filteredAttendance.filter((a) => a.status === 'hadir').length,
     telat: filteredAttendance.filter((a) => a.status === 'telat').length,
-    izinApproved: filteredAttendance.filter((a) => (a.status === 'izin' || a.permissionType === 'IZIN') && a.permissionStatus !== 'REJECTED').length,
-    sakit: filteredAttendance.filter((a) => a.permissionType === 'SAKIT' && a.permissionStatus !== 'REJECTED').length,
-    cuti: filteredAttendance.filter((a) => a.permissionType === 'CUTI' && a.permissionStatus !== 'REJECTED').length,
+    izinApproved: filteredAttendance.filter(
+      (a) => (a.status === 'izin' || a.permissionType === 'IZIN') && a.permissionStatus !== 'REJECTED'
+    ).length,
+    sakit: filteredAttendance.filter(
+      (a) => a.permissionType === 'SAKIT' && a.permissionStatus !== 'REJECTED'
+    ).length,
+    cuti: filteredAttendance.filter(
+      (a) => a.permissionType === 'CUTI' && a.permissionStatus !== 'REJECTED'
+    ).length,
     alpha: filteredAttendance.filter((a) => a.status === 'alpha').length,
   };
 
-  // ── Excel Export (7 Kolom: 1 Tanggal, 2 Nama, 3 Hadir, 4 Izin, 5 Sakit, 6 Cuti, 7 Telat) ──
+  // Flatten records for log view
+  const flatRecords = filteredAttendance.sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
+
+  // Get formatted period description text
+  const getPeriodeText = () => {
+    if (filterType === 'date' && selectedDate) {
+      const [y, m, d] = selectedDate.split('-');
+      const dateObj = new Date(Date.UTC(parseInt(y), parseInt(m) - 1, parseInt(d)));
+      return `Tanggal ${dateObj.toLocaleDateString('id-ID', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        timeZone: 'UTC',
+      })}`;
+    }
+    if (filterType === 'month' && month && month !== 'all') {
+      const [y, m] = month.split('-');
+      const d = new Date(parseInt(y), parseInt(m) - 1, 1);
+      return `Bulan ${d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`;
+    }
+    if (filterType === 'year' && selectedYear) {
+      return `Tahun ${selectedYear}`;
+    }
+    return 'Semua Data';
+  };
+
+  // Excel export
   const buildExcelRows = (records: any[]) => {
     return records.map((item) => {
       const isHadir = item.status === 'hadir';
@@ -112,16 +190,25 @@ export default function RekapPage() {
       const isSakit = permType === 'SAKIT';
       const isCuti = permType === 'CUTI';
 
+      const pos = item.employee?.position || item.position || '-';
+      const formattedPos = pos !== '-' ? pos.charAt(0).toUpperCase() + pos.slice(1) : '-';
+
       return {
-        'Tanggal': new Date(item.date).toLocaleDateString('id-ID', {
-          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC'
+        Tanggal: new Date(item.date).toLocaleDateString('id-ID', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          timeZone: 'UTC',
         }),
-        'Nama': item.employeeName,
-        'Hadir': isHadir ? (item.checkInTime ? `✓ (${item.checkInTime})` : '✓') : '-',
-        'Izin': isIzin ? '✓' : '-',
-        'Sakit': isSakit ? '✓' : '-',
-        'Cuti': isCuti ? '✓' : '-',
-        'Telat': isTelat ? (item.checkInTime ? `✓ (${item.checkInTime})` : '✓') : '-',
+        Nama: item.employeeName,
+        Nomor: item.employee?.phone || item.phone || '-',
+        Jabatan: formattedPos,
+        Hadir: isHadir ? (item.checkInTime ? `✓ (${item.checkInTime})` : '✓') : '-',
+        Izin: isIzin ? '✓' : '-',
+        Sakit: isSakit ? '✓' : '-',
+        Cuti: isCuti ? '✓' : '-',
+        Telat: isTelat ? (item.checkInTime ? `✓ (${item.checkInTime})` : '✓') : '-',
       };
     });
   };
@@ -132,15 +219,16 @@ export default function RekapPage() {
       const rows = buildExcelRows(records);
       const ws = XLSX.utils.json_to_sheet(rows);
 
-      // Set 7 Column Widths
       ws['!cols'] = [
-        { wch: 28 }, // 1. Tanggal
-        { wch: 25 }, // 2. Nama
-        { wch: 18 }, // 3. Hadir
-        { wch: 14 }, // 4. Izin
-        { wch: 14 }, // 5. Sakit
-        { wch: 14 }, // 6. Cuti
-        { wch: 18 }, // 7. Telat
+        { wch: 28 },
+        { wch: 25 },
+        { wch: 18 },
+        { wch: 18 },
+        { wch: 14 },
+        { wch: 14 },
+        { wch: 14 },
+        { wch: 14 },
+        { wch: 18 },
       ];
 
       const wb = XLSX.utils.book_new();
@@ -153,7 +241,7 @@ export default function RekapPage() {
         text: `File ${filename} telah berhasil diunduh.`,
         timer: 2000,
         showConfirmButton: false,
-        customClass: { popup: 'rounded-2xl' }
+        customClass: { popup: 'rounded-2xl' },
       });
     } catch (err: any) {
       console.error('Export error:', err);
@@ -162,29 +250,243 @@ export default function RekapPage() {
         title: 'Export Gagal',
         text: 'Terjadi kesalahan saat memproses file Excel.',
         confirmButtonColor: '#4f46e5',
-        customClass: { popup: 'rounded-2xl' }
+        customClass: { popup: 'rounded-2xl' },
       });
     }
   };
 
   const handleExportMonth = () => {
-    const label = selectedDate ? selectedDate : (month === 'all' ? 'semua' : month);
-    downloadExcel(flatRecords, `Rekap_Presensi_${label}.xlsx`);
-  };
-
-  const handleExportAll = () => {
-    downloadExcel(flatRecords, `Rekap_Presensi_Semua.xlsx`);
+    downloadExcel(flatRecords, `Rekap_Presensi_${getPeriodeText().replace(/ /g, '_')}.xlsx`);
   };
 
   const handleResetFilters = () => {
     const d = new Date();
+    setFilterType('month');
     setMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
     setSelectedDate('');
+    setSelectedYear(String(d.getFullYear()));
     setEmployeeFilter('');
   };
 
-  // Handle previewing photo by fetching it on-demand
-  const handlePreviewPhoto = async (id: string, type: 'checkin' | 'checkout' | 'attachment', title: string) => {
+  // Trigger Print PDF Document
+  const handlePrintPDF = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Popup Diblokir',
+        text: 'Silakan izinkan popup browser Anda untuk mencetak PDF.',
+        confirmButtonColor: '#4f46e5',
+        customClass: { popup: 'rounded-2xl' },
+      });
+      return;
+    }
+
+    const currentDateStr = new Date().toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+
+    const rowsHtml = employeeRekapList
+      .map(
+        (emp, idx) => `
+      <tr>
+        <td style="text-align: center;">${idx + 1}</td>
+        <td style="font-weight: bold; color: #0f172a;">${emp.name}</td>
+        <td>${emp.position}</td>
+        <td style="text-align: center; font-weight: bold; color: #047857;">${emp.hadir}</td>
+        <td style="text-align: center; font-weight: bold; color: #1d4ed8;">${emp.izin}</td>
+        <td style="text-align: center; font-weight: bold; color: #be123c;">${emp.sakit}</td>
+        <td style="text-align: center; font-weight: bold; color: #6d28d9;">${emp.cuti}</td>
+        <td style="text-align: center; font-weight: bold; color: #b45309;">${emp.telat}</td>
+      </tr>
+    `
+      )
+      .join('');
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html lang="id">
+      <head>
+        <meta charset="UTF-8" />
+        <title>Laporan Rekap Presensi Karyawan</title>
+        <style>
+          @page {
+            size: A4 portrait;
+            margin: 15mm;
+          }
+          body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            color: #1e293b;
+            margin: 0;
+            padding: 20px;
+            font-size: 12px;
+            background: #fff;
+          }
+          .header {
+            text-align: center;
+            margin-bottom: 24px;
+            border-bottom: 2px solid #0f172a;
+            padding-bottom: 12px;
+          }
+          .header h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #0f172a;
+          }
+          .header h2 {
+            margin: 4px 0 0 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: #475569;
+          }
+          .header p {
+            margin: 6px 0 0 0;
+            font-size: 12px;
+            color: #4338ca;
+            font-weight: 700;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+          }
+          th, td {
+            border: 1px solid #cbd5e1;
+            padding: 8px 10px;
+            text-align: left;
+          }
+          th {
+            background-color: #f1f5f9;
+            font-weight: 700;
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #334155;
+          }
+          tfoot tr td {
+            background-color: #f8fafc;
+            font-weight: 800;
+            font-size: 12px;
+            border-top: 2px solid #0f172a;
+          }
+          .signature-section {
+            margin-top: 40px;
+            page-break-inside: avoid;
+          }
+          .sig-header {
+            font-weight: 700;
+            font-size: 12px;
+            margin-bottom: 15px;
+          }
+          .signatures-grid {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+          }
+          .sig-box {
+            width: 45%;
+            text-align: left;
+          }
+          .sig-title {
+            font-weight: 700;
+            font-size: 12px;
+            color: #1e293b;
+            line-height: 1.5;
+          }
+          .sig-space {
+            height: 65px;
+          }
+          .sig-name {
+            font-weight: 800;
+            font-size: 13px;
+            text-decoration: underline;
+            color: #0f172a;
+          }
+          @media print {
+            body { padding: 0; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>LAPORAN REKAP PRESENSI KARYAWAN</h1>
+          <h2>PT. AXIS PROJECT</h2>
+          <p>Periode: ${getPeriodeText()}</p>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 35px; text-align: center;">No</th>
+              <th>Nama</th>
+              <th>Jabatan</th>
+              <th style="width: 55px; text-align: center;">Hadir</th>
+              <th style="width: 55px; text-align: center;">Izin</th>
+              <th style="width: 55px; text-align: center;">Sakit</th>
+              <th style="width: 55px; text-align: center;">Cuti</th>
+              <th style="width: 130px; text-align: center;">Keterangan (Telat)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3" style="text-align: right; padding-right: 15px;">TOTAL</td>
+              <td style="text-align: center;">${totalSummary.hadir}</td>
+              <td style="text-align: center;">${totalSummary.izin}</td>
+              <td style="text-align: center;">${totalSummary.sakit}</td>
+              <td style="text-align: center;">${totalSummary.cuti}</td>
+              <td style="text-align: center;">${totalSummary.telat}</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <div class="signature-section">
+          <div class="sig-header">Mengetahui,</div>
+          <div class="signatures-grid">
+            <div class="sig-box">
+              <div class="sig-title">
+                Sidoarjo, ${currentDateStr}<br/>
+                Manager
+              </div>
+              <div class="sig-space"></div>
+              <div class="sig-name">Rino Raihan G.</div>
+            </div>
+            <div class="sig-box">
+              <div class="sig-title">
+                <br/>
+                Ast Manager
+              </div>
+              <div class="sig-space"></div>
+              <div class="sig-name">Aldan Nur Sajidan</div>
+            </div>
+          </div>
+        </div>
+
+        <script>
+          window.onload = function() {
+            window.print();
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+  };
+
+  // Preview photo
+  const handlePreviewPhoto = async (
+    id: string,
+    type: 'checkin' | 'checkout' | 'attachment',
+    title: string
+  ) => {
     const loadingKey = `${id}-${type}`;
     setLoadingPhotoId(loadingKey);
     try {
@@ -199,7 +501,7 @@ export default function RekapPage() {
           title: 'Gambar Tidak Ditemukan',
           text: 'Bukti gambar tidak tersedia atau gagal dimuat.',
           confirmButtonColor: '#4f46e5',
-          customClass: { popup: 'rounded-2xl' }
+          customClass: { popup: 'rounded-2xl' },
         });
       }
     } catch (err: any) {
@@ -208,14 +510,14 @@ export default function RekapPage() {
         title: 'Gagal Memuat Gambar',
         text: err.message || 'Terjadi kesalahan.',
         confirmButtonColor: '#4f46e5',
-        customClass: { popup: 'rounded-2xl' }
+        customClass: { popup: 'rounded-2xl' },
       });
     } finally {
       setLoadingPhotoId(null);
     }
   };
 
-  // Handle Delete Attendance Record
+  // Delete attendance record
   const handleDeleteAttendance = async (attendanceId: string) => {
     const result = await Swal.fire({
       title: 'Apakah Anda yakin?',
@@ -226,7 +528,7 @@ export default function RekapPage() {
       cancelButtonColor: '#64748b',
       confirmButtonText: 'Ya, hapus!',
       cancelButtonText: 'Batal',
-      customClass: { popup: 'rounded-2xl' }
+      customClass: { popup: 'rounded-2xl' },
     });
 
     if (!result.isConfirmed) return;
@@ -246,21 +548,26 @@ export default function RekapPage() {
         icon: 'success',
         timer: 1500,
         showConfirmButton: false,
-        customClass: { popup: 'rounded-2xl' }
+        customClass: { popup: 'rounded-2xl' },
       });
     } catch (err: any) {
       Swal.fire({
         title: 'Gagal!',
         text: err.message || 'Gagal menghapus data presensi.',
         icon: 'error',
-        customClass: { popup: 'rounded-2xl' }
+        customClass: { popup: 'rounded-2xl' },
       });
     }
   };
 
-  const getStatusBadge = (status: string, permissionType?: string | null, permissionStatus?: string | null) => {
+  const getStatusBadge = (
+    status: string,
+    permissionType?: string | null,
+    permissionStatus?: string | null
+  ) => {
     if (status === 'izin' && permissionType) {
-      if (permissionStatus === 'REJECTED') return 'bg-slate-100 text-slate-500 border border-slate-300 line-through';
+      if (permissionStatus === 'REJECTED')
+        return 'bg-slate-100 text-slate-500 border border-slate-300 line-through';
       if (permissionType === 'CUTI') return 'bg-violet-100 text-violet-700 border border-violet-200';
       if (permissionType === 'SAKIT') return 'bg-rose-100 text-rose-700 border border-rose-200';
       return 'bg-blue-100 text-blue-700 border border-blue-200';
@@ -274,7 +581,11 @@ export default function RekapPage() {
     return styles[status] || styles.alpha;
   };
 
-  const getStatusLabel = (status: string, permissionType?: string | null, permissionStatus?: string | null) => {
+  const getStatusLabel = (
+    status: string,
+    permissionType?: string | null,
+    permissionStatus?: string | null
+  ) => {
     if (status === 'izin' && permissionType) {
       const rejected = permissionStatus === 'REJECTED';
       if (permissionType === 'CUTI') return rejected ? '✗ Cuti (Ditolak)' : '🌴 Cuti';
@@ -316,20 +627,16 @@ export default function RekapPage() {
     return styles[color] || styles.slate;
   };
 
-  // Flatten the grouped attendance record structure
-  const flatRecords = (Object.values(attendanceByEmployee) as Array<{ employee: any; records: any[] }>)
-    .flatMap((group) =>
-      group.records.map((attendance) => ({
-        ...attendance,
-        employee: group.employee,
-      }))
-    )
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
   const formatPosition = (pos: string | null) => {
     if (!pos) return '-';
     return pos.charAt(0).toUpperCase() + pos.slice(1);
   };
+
+  const currentDateFormatted = new Date().toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 md:p-8">
@@ -340,15 +647,25 @@ export default function RekapPage() {
           <div>
             <h1 className="text-3xl font-bold text-slate-900">Rekap Presensi Karyawan</h1>
             <p className="text-slate-600 mt-1 text-sm">
-              Kelola, saring per tanggal/bulan, dan export data presensi karyawan secara real-time.
+              Kelola, saring per tanggal/bulan/tahun, cetak laporan PDF, dan export data presensi karyawan.
             </p>
           </div>
-          {loading && (
-            <div className="flex items-center gap-2 text-indigo-600 font-medium text-sm self-start sm:self-auto">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Memuat data...
-            </div>
-          )}
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={() => setShowPdfModal(true)}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2.5 rounded-xl shadow-sm flex items-center gap-2 cursor-pointer transition-all"
+            >
+              <Printer className="w-4 h-4" />
+              Cetak Laporan PDF
+            </Button>
+
+            {loading && (
+              <div className="flex items-center gap-2 text-indigo-600 font-medium text-sm">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Memuat data...
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Statistics */}
@@ -376,13 +693,13 @@ export default function RekapPage() {
 
         {/* Filter Controls Bar */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6 space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
               <Search className="w-4 h-4 text-indigo-600" />
-              Filter Data Presensi
+              Filter Data Presensi ({getPeriodeText()})
             </h2>
 
-            {(selectedDate || employeeFilter || month === 'all') && (
+            {(selectedDate || employeeFilter || month === 'all' || filterType !== 'month') && (
               <button
                 onClick={handleResetFilters}
                 className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
@@ -393,58 +710,117 @@ export default function RekapPage() {
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            
-            {/* Filter Per Tanggal (Single Date) */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                Filter Per Tanggal
-              </label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                <input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2.5 border border-slate-300 rounded-xl text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-                />
-              </div>
-            </div>
+          {/* Filter Mode Selector Tabs */}
+          <div className="flex items-center gap-2 border-b border-slate-200 pb-3 flex-wrap">
+            <span className="text-xs font-bold text-slate-600 uppercase mr-2">Mode Filter:</span>
+            <button
+              onClick={() => setFilterType('date')}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                filterType === 'date'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              Per Tanggal
+            </button>
+            <button
+              onClick={() => setFilterType('month')}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                filterType === 'month'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              Per Bulan
+            </button>
+            <button
+              onClick={() => setFilterType('year')}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                filterType === 'year'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              Per Tahun
+            </button>
+            <button
+              onClick={() => setFilterType('all')}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                filterType === 'all'
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              Semua Data
+            </button>
+          </div>
 
-            {/* Filter Bulan */}
-            <div className="space-y-1.5">
-              <div className="flex justify-between items-center">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-1">
+            
+            {/* Input Dynamic based on Filter Mode */}
+            {filterType === 'date' && (
+              <div className="space-y-1.5">
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                  Filter Bulan
+                  Pilih Tanggal
                 </label>
-                <label className="flex items-center gap-1 text-[11px] text-indigo-600 font-bold cursor-pointer select-none">
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                   <input
-                    type="checkbox"
-                    checked={month === 'all'}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setMonth('all');
-                      } else {
-                        const d = new Date();
-                        setMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
-                      }
-                    }}
-                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer h-3.5 w-3.5"
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2.5 border border-slate-300 rounded-xl text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
                   />
-                  Semua Bulan
+                </div>
+              </div>
+            )}
+
+            {filterType === 'month' && (
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Pilih Bulan
                 </label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                  <input
+                    type="month"
+                    value={month === 'all' ? '' : month}
+                    onChange={(e) => setMonth(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2.5 border border-slate-300 rounded-xl text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                  />
+                </div>
               </div>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                <input
-                  type="month"
-                  value={month === 'all' ? '' : month}
-                  disabled={month === 'all' || !!selectedDate}
-                  onChange={(e) => setMonth(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2.5 border border-slate-300 rounded-xl text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all disabled:bg-slate-100 disabled:text-slate-400"
-                />
+            )}
+
+            {filterType === 'year' && (
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Pilih Tahun
+                </label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                  <select
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2.5 border border-slate-300 rounded-xl text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all bg-white"
+                  >
+                    {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map((y) => (
+                      <option key={y} value={y}>
+                        Tahun {y}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-            </div>
+            )}
+
+            {filterType === 'all' && (
+              <div className="space-y-1.5 flex items-end">
+                <div className="p-2.5 bg-indigo-50 border border-indigo-200 rounded-xl text-xs font-semibold text-indigo-700 w-full">
+                  Menampilkan seluruh data tanpa batasan periode.
+                </div>
+              </div>
+            )}
 
             {/* Cari Nama Karyawan */}
             <div className="space-y-1.5">
@@ -463,27 +839,27 @@ export default function RekapPage() {
               </div>
             </div>
 
-            {/* Export Buttons */}
-            <div className="space-y-1.5">
+            {/* Export & Action Buttons */}
+            <div className="space-y-1.5 md:col-span-2">
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                Export Excel (7 Kolom)
+                Aksi Laporan
               </label>
               <div className="flex gap-2">
                 <button
                   onClick={handleExportMonth}
                   className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
-                  title="Export data sesuai filter ke Excel"
+                  title="Export Excel Rekap"
                 >
                   <FileSpreadsheet className="w-4 h-4" />
-                  Filter Ini
+                  Export Excel
                 </button>
                 <button
-                  onClick={handleExportAll}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-bold transition-all cursor-pointer"
-                  title="Export seluruh data ke Excel"
+                  onClick={() => setShowPdfModal(true)}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-300 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                  title="Prinj PDF Laporan Rekap"
                 >
-                  <Download className="w-4 h-4" />
-                  Semua
+                  <Printer className="w-4 h-4" />
+                  Print PDF
                 </button>
               </div>
             </div>
@@ -499,169 +875,319 @@ export default function RekapPage() {
           </div>
         )}
 
-        {/* Table */}
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-200">
-          {!loading && flatRecords.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-slate-50 border-b border-slate-200">
-                  <tr>
-                    <th className="px-5 py-3.5 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">No</th>
-                    <th className="px-5 py-3.5 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Nama Karyawan</th>
-                    <th className="px-5 py-3.5 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Role / Jabatan</th>
-                    <th className="px-5 py-3.5 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Tanggal</th>
-                    <th className="px-5 py-3.5 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Jam Masuk</th>
-                    <th className="px-5 py-3.5 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Jam Pulang</th>
-                    <th className="px-5 py-3.5 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Status</th>
-                    <th className="px-5 py-3.5 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Keterangan</th>
-                    <th className="px-5 py-3.5 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Bukti Foto</th>
-                    <th className="px-5 py-3.5 text-right text-xs font-bold text-slate-700 uppercase tracking-wider">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200">
-                  {flatRecords.map((item, idx) => (
-                    <tr
-                      key={item.id}
-                      className="hover:bg-slate-50/60 transition-colors"
-                    >
-                      <td className="px-5 py-4 text-xs text-slate-500 font-bold">
-                        {idx + 1}
+        {/* View Switcher Tabs */}
+        <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setActiveTab('rekap')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'rekap'
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              Tabel Rekap Per Karyawan
+            </button>
+            <button
+              onClick={() => setActiveTab('log')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'log'
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+              }`}
+            >
+              <ListFilter className="w-4 h-4" />
+              Log Presensi Harian ({flatRecords.length})
+            </button>
+          </div>
+        </div>
+
+        {/* TAB 1: Tabel Rekap Per Karyawan (Nama, Jabatan, Hadir, Izin, Sakit, Cuti, Telat + Total) */}
+        {activeTab === 'rekap' && (
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-200">
+            {!loading && employeeRekapList.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                      <th className="px-5 py-3.5 text-center text-xs font-bold text-slate-700 uppercase tracking-wider w-12">No</th>
+                      <th className="px-5 py-3.5 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Nama</th>
+                      <th className="px-5 py-3.5 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Jabatan</th>
+                      <th className="px-5 py-3.5 text-center text-xs font-bold text-emerald-700 uppercase tracking-wider">Hadir</th>
+                      <th className="px-5 py-3.5 text-center text-xs font-bold text-blue-700 uppercase tracking-wider">Izin</th>
+                      <th className="px-5 py-3.5 text-center text-xs font-bold text-rose-700 uppercase tracking-wider">Sakit</th>
+                      <th className="px-5 py-3.5 text-center text-xs font-bold text-violet-700 uppercase tracking-wider">Cuti</th>
+                      <th className="px-5 py-3.5 text-center text-xs font-bold text-amber-700 uppercase tracking-wider">Keterangan (Telat)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200">
+                    {employeeRekapList.map((emp, idx) => (
+                      <tr key={emp.id} className="hover:bg-slate-50/60 transition-colors">
+                        <td className="px-5 py-4 text-xs text-center text-slate-500 font-bold">
+                          {idx + 1}
+                        </td>
+                        <td className="px-5 py-4 text-sm font-bold text-slate-900">
+                          {emp.name}
+                        </td>
+                        <td className="px-5 py-4 text-xs text-slate-700 font-semibold">
+                          <span className="inline-block px-2.5 py-1 bg-slate-100 text-slate-800 rounded-lg text-[11px] font-bold uppercase">
+                            {emp.position}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-center font-bold text-emerald-700 text-sm">
+                          {emp.hadir}
+                        </td>
+                        <td className="px-5 py-4 text-center font-bold text-blue-700 text-sm">
+                          {emp.izin}
+                        </td>
+                        <td className="px-5 py-4 text-center font-bold text-rose-700 text-sm">
+                          {emp.sakit}
+                        </td>
+                        <td className="px-5 py-4 text-center font-bold text-violet-700 text-sm">
+                          {emp.cuti}
+                        </td>
+                        <td className="px-5 py-4 text-center font-bold text-amber-700 text-sm">
+                          {emp.telat}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot className="bg-slate-100 border-t-2 border-slate-300 font-extrabold text-slate-900">
+                    <tr>
+                      <td colSpan={3} className="px-5 py-4 text-right uppercase tracking-wider text-xs">
+                        TOTAL REKAP
                       </td>
-                      <td className="px-5 py-4 text-sm font-bold text-slate-900">
-                        {item.employeeName}
+                      <td className="px-5 py-4 text-center text-emerald-800 text-base">
+                        {totalSummary.hadir}
                       </td>
-                      <td className="px-5 py-4 text-xs text-slate-700 font-semibold">
-                        <span className="inline-block px-2.5 py-1 bg-slate-100 text-slate-800 rounded-lg text-[11px] font-bold uppercase">
-                          {formatPosition(item.employee?.position)}
-                        </span>
+                      <td className="px-5 py-4 text-center text-blue-800 text-base">
+                        {totalSummary.izin}
                       </td>
-                      <td className="px-5 py-4 text-xs font-semibold text-slate-600">
-                        {new Date(item.date).toLocaleDateString(
-                          'id-ID',
-                          {
+                      <td className="px-5 py-4 text-center text-rose-800 text-base">
+                        {totalSummary.sakit}
+                      </td>
+                      <td className="px-5 py-4 text-center text-violet-800 text-base">
+                        {totalSummary.cuti}
+                      </td>
+                      <td className="px-5 py-4 text-center text-amber-800 text-base">
+                        {totalSummary.telat}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            ) : (
+              <div className="p-12 text-center">
+                {loading ? (
+                  <div className="flex flex-col items-center justify-center gap-2 py-4">
+                    <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+                    <p className="text-slate-500 text-sm font-medium">Mengambil data rekap presensi...</p>
+                  </div>
+                ) : (
+                  <>
+                    <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                    <p className="text-slate-600 font-bold text-base">
+                      Tidak ada data karyawan ditemukan
+                    </p>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 2: Log Presensi Harian */}
+        {activeTab === 'log' && (
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-200">
+            {!loading && flatRecords.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                      <th className="px-5 py-3.5 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">No</th>
+                      <th className="px-5 py-3.5 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Nama Karyawan</th>
+                      <th className="px-5 py-3.5 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Role / Jabatan</th>
+                      <th className="px-5 py-3.5 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Tanggal</th>
+                      <th className="px-5 py-3.5 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Jam Masuk</th>
+                      <th className="px-5 py-3.5 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Jam Pulang</th>
+                      <th className="px-5 py-3.5 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Status</th>
+                      <th className="px-5 py-3.5 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Keterangan</th>
+                      <th className="px-5 py-3.5 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">Bukti Foto</th>
+                      <th className="px-5 py-3.5 text-right text-xs font-bold text-slate-700 uppercase tracking-wider">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200">
+                    {flatRecords.map((item, idx) => (
+                      <tr
+                        key={item.id}
+                        className="hover:bg-slate-50/60 transition-colors"
+                      >
+                        <td className="px-5 py-4 text-xs text-slate-500 font-bold">
+                          {idx + 1}
+                        </td>
+                        <td className="px-5 py-4 text-sm font-bold text-slate-900">
+                          {item.employeeName}
+                        </td>
+                        <td className="px-5 py-4 text-xs text-slate-700 font-semibold">
+                          <span className="inline-block px-2.5 py-1 bg-slate-100 text-slate-800 rounded-lg text-[11px] font-bold uppercase">
+                            {formatPosition(item.employee?.position || item.position)}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-xs font-semibold text-slate-600">
+                          {new Date(item.date).toLocaleDateString('id-ID', {
                             weekday: 'short',
                             year: 'numeric',
                             month: 'short',
                             day: 'numeric',
                             timeZone: 'UTC',
-                          }
-                        )}
-                      </td>
-                      <td className="px-5 py-4 text-xs text-slate-700 font-mono font-bold">
-                        {item.checkInTime || '-'}
-                      </td>
-                      <td className="px-5 py-4 text-xs text-slate-700 font-mono font-bold">
-                        {item.checkOutTime || '-'}
-                      </td>
-                      <td className="px-5 py-4 text-xs">
-                        <span
-                          className={`inline-block px-3 py-1 rounded-full text-xs font-extrabold ${getStatusBadge(item.status, item.permissionType, item.permissionStatus)}`}
-                        >
-                          {getStatusLabel(item.status, item.permissionType, item.permissionStatus)}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 text-xs text-slate-600 max-w-[180px]">
-                        {item.permissionType ? (
-                          <div>
-                            <div className="flex items-center gap-1.5 mb-0.5">
-                              <span className="block font-bold text-[10px] uppercase tracking-wider text-slate-400">{item.permissionType}</span>
-                              {item.permissionStatus === 'REJECTED' && (
-                                <span className="px-1.5 py-0.5 bg-red-100 text-red-600 rounded text-[9px] font-bold uppercase">Ditolak</span>
-                              )}
-                              {item.permissionStatus === 'APPROVED' && (
-                                <span className="px-1.5 py-0.5 bg-green-100 text-green-600 rounded text-[9px] font-bold uppercase">Disetujui</span>
-                              )}
+                          })}
+                        </td>
+                        <td className="px-5 py-4 text-xs text-slate-700 font-mono font-bold">
+                          {item.checkInTime || '-'}
+                        </td>
+                        <td className="px-5 py-4 text-xs text-slate-700 font-mono font-bold">
+                          {item.checkOutTime || '-'}
+                        </td>
+                        <td className="px-5 py-4 text-xs">
+                          <span
+                            className={`inline-block px-3 py-1 rounded-full text-xs font-extrabold ${getStatusBadge(
+                              item.status,
+                              item.permissionType,
+                              item.permissionStatus
+                            )}`}
+                          >
+                            {getStatusLabel(item.status, item.permissionType, item.permissionStatus)}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-xs text-slate-600 max-w-[180px]">
+                          {item.permissionType ? (
+                            <div>
+                              <div className="flex items-center gap-1.5 mb-0.5">
+                                <span className="block font-bold text-[10px] uppercase tracking-wider text-slate-400">
+                                  {item.permissionType}
+                                </span>
+                                {item.permissionStatus === 'REJECTED' && (
+                                  <span className="px-1.5 py-0.5 bg-red-100 text-red-600 rounded text-[9px] font-bold uppercase">
+                                    Ditolak
+                                  </span>
+                                )}
+                                {item.permissionStatus === 'APPROVED' && (
+                                  <span className="px-1.5 py-0.5 bg-green-100 text-green-600 rounded text-[9px] font-bold uppercase">
+                                    Disetujui
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-xs leading-relaxed line-clamp-2">
+                                {item.permissionReason || '-'}
+                              </span>
                             </div>
-                            <span className="text-xs leading-relaxed line-clamp-2">{item.permissionReason || '-'}</span>
+                          ) : (
+                            <span className="text-xs text-slate-400 italic">{item.notes || '-'}</span>
+                          )}
+                        </td>
+                        <td className="px-5 py-4 text-xs">
+                          <div className="flex flex-wrap gap-1.5">
+                            {item.hasCheckInPhoto && (
+                              <button
+                                disabled={loadingPhotoId === `${item.id}-checkin`}
+                                onClick={() =>
+                                  handlePreviewPhoto(
+                                    item.id,
+                                    'checkin',
+                                    `Bukti Masuk: ${item.employeeName} (${item.date})`
+                                  )
+                                }
+                                className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 disabled:bg-slate-100 disabled:text-slate-400 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+                              >
+                                {loadingPhotoId === `${item.id}-checkin` ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <Eye className="w-3.5 h-3.5" />
+                                )}
+                                Masuk
+                              </button>
+                            )}
+                            {item.hasCheckOutPhoto && (
+                              <button
+                                disabled={loadingPhotoId === `${item.id}-checkout`}
+                                onClick={() =>
+                                  handlePreviewPhoto(
+                                    item.id,
+                                    'checkout',
+                                    `Bukti Pulang: ${item.employeeName} (${item.date})`
+                                  )
+                                }
+                                className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 disabled:bg-slate-100 disabled:text-slate-400 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+                              >
+                                {loadingPhotoId === `${item.id}-checkout` ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <Eye className="w-3.5 h-3.5" />
+                                )}
+                                Pulang
+                              </button>
+                            )}
+                            {item.hasAttachment && (
+                              <button
+                                disabled={loadingPhotoId === `${item.id}-attachment`}
+                                onClick={() =>
+                                  handlePreviewPhoto(
+                                    item.id,
+                                    'attachment',
+                                    `Bukti Izin: ${item.employeeName} (${item.date})`
+                                  )
+                                }
+                                className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 disabled:bg-slate-100 disabled:text-slate-400 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+                              >
+                                {loadingPhotoId === `${item.id}-attachment` ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <Eye className="w-3.5 h-3.5" />
+                                )}
+                                Lampiran
+                              </button>
+                            )}
+                            {!item.hasCheckInPhoto &&
+                              !item.hasCheckOutPhoto &&
+                              !item.hasAttachment && (
+                                <span className="text-slate-400 text-xs italic">Tidak ada bukti</span>
+                              )}
                           </div>
-                        ) : (
-                          <span className="text-xs text-slate-400 italic">{item.notes || '-'}</span>
-                        )}
-                      </td>
-                      <td className="px-5 py-4 text-xs">
-                        <div className="flex flex-wrap gap-1.5">
-                          {item.hasCheckInPhoto && (
-                            <button
-                              disabled={loadingPhotoId === `${item.id}-checkin`}
-                              onClick={() => handlePreviewPhoto(item.id, 'checkin', `Bukti Masuk: ${item.employeeName} (${item.date})`)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 disabled:bg-slate-100 disabled:text-slate-400 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
-                            >
-                              {loadingPhotoId === `${item.id}-checkin` ? (
-                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                              ) : (
-                                <Eye className="w-3.5 h-3.5" />
-                              )}
-                              Masuk
-                            </button>
-                          )}
-                          {item.hasCheckOutPhoto && (
-                            <button
-                              disabled={loadingPhotoId === `${item.id}-checkout`}
-                              onClick={() => handlePreviewPhoto(item.id, 'checkout', `Bukti Pulang: ${item.employeeName} (${item.date})`)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 disabled:bg-slate-100 disabled:text-slate-400 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
-                            >
-                              {loadingPhotoId === `${item.id}-checkout` ? (
-                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                              ) : (
-                                <Eye className="w-3.5 h-3.5" />
-                              )}
-                              Pulang
-                            </button>
-                          )}
-                          {item.hasAttachment && (
-                            <button
-                              disabled={loadingPhotoId === `${item.id}-attachment`}
-                              onClick={() => handlePreviewPhoto(item.id, 'attachment', `Bukti Izin: ${item.employeeName} (${item.date})`)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 disabled:bg-slate-100 disabled:text-slate-400 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
-                            >
-                              {loadingPhotoId === `${item.id}-attachment` ? (
-                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                              ) : (
-                                <Eye className="w-3.5 h-3.5" />
-                              )}
-                              Lampiran
-                            </button>
-                          )}
-                          {!item.hasCheckInPhoto && !item.hasCheckOutPhoto && !item.hasAttachment && (
-                            <span className="text-slate-400 text-xs italic">Tidak ada bukti</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-5 py-4 text-xs text-right">
-                        <button
-                          onClick={() => handleDeleteAttendance(item.id)}
-                          className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg transition-colors cursor-pointer"
-                          title="Hapus Presensi"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="p-12 text-center">
-              {loading ? (
-                <div className="flex flex-col items-center justify-center gap-2 py-4">
-                  <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
-                  <p className="text-slate-500 text-sm font-medium">Mengambil data rekap presensi...</p>
-                </div>
-              ) : (
-                <>
-                  <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                  <p className="text-slate-600 font-bold text-base">
-                    Tidak ada data presensi untuk filter yang dipilih
-                  </p>
-                  <p className="text-slate-400 text-xs mt-1">
-                    Silakan atur ulang tanggal, bulan, atau nama karyawan pada filter di atas.
-                  </p>
-                </>
-              )}
-            </div>
-          )}
-        </div>
+                        </td>
+                        <td className="px-5 py-4 text-xs text-right">
+                          <button
+                            onClick={() => handleDeleteAttendance(item.id)}
+                            className="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg transition-colors cursor-pointer"
+                            title="Hapus Presensi"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="p-12 text-center">
+                {loading ? (
+                  <div className="flex flex-col items-center justify-center gap-2 py-4">
+                    <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+                    <p className="text-slate-500 text-sm font-medium">Mengambil data rekap presensi...</p>
+                  </div>
+                ) : (
+                  <>
+                    <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                    <p className="text-slate-600 font-bold text-base">
+                      Tidak ada data presensi untuk filter yang dipilih
+                    </p>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
       </div>
 
@@ -697,6 +1223,143 @@ export default function RekapPage() {
                 Tutup
               </Button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Preview Laporan PDF */}
+      {showPdfModal && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
+              <div className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-indigo-600" />
+                <h3 className="font-bold text-slate-900 text-lg">
+                  Preview Laporan Rekap Presensi (PDF)
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowPdfModal(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Document Paper Preview */}
+            <div className="p-6 md:p-10 overflow-y-auto flex-1 bg-slate-200/60">
+              <div className="bg-white p-8 md:p-12 shadow-md rounded-lg max-w-3xl mx-auto border border-slate-300 font-sans text-slate-900 text-sm space-y-6">
+                
+                {/* PDF Title Header */}
+                <div className="text-center border-b-2 border-slate-900 pb-4">
+                  <h1 className="text-xl md:text-2xl font-black uppercase tracking-wider text-slate-900">
+                    LAPORAN REKAP PRESENSI KARYAWAN
+                  </h1>
+                  <h2 className="text-sm font-semibold text-slate-600 mt-1">
+                    PT. AXIS PROJECT
+                  </h2>
+                  <p className="text-xs font-bold text-indigo-700 mt-2">
+                    Periode: {getPeriodeText()}
+                  </p>
+                </div>
+
+                {/* PDF Rekap Table */}
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse border border-slate-300 text-xs">
+                    <thead>
+                      <tr className="bg-slate-100 border-b border-slate-300 text-slate-800">
+                        <th className="border border-slate-300 px-3 py-2 text-center w-10">No</th>
+                        <th className="border border-slate-300 px-3 py-2 text-left">Nama</th>
+                        <th className="border border-slate-300 px-3 py-2 text-left">Jabatan</th>
+                        <th className="border border-slate-300 px-3 py-2 text-center w-14">Hadir</th>
+                        <th className="border border-slate-300 px-3 py-2 text-center w-14">Izin</th>
+                        <th className="border border-slate-300 px-3 py-2 text-center w-14">Sakit</th>
+                        <th className="border border-slate-300 px-3 py-2 text-center w-14">Cuti</th>
+                        <th className="border border-slate-300 px-3 py-2 text-center w-28">Keterangan (Telat)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {employeeRekapList.map((emp, idx) => (
+                        <tr key={emp.id} className="border-b border-slate-200">
+                          <td className="border border-slate-300 px-3 py-2 text-center font-semibold text-slate-600">{idx + 1}</td>
+                          <td className="border border-slate-300 px-3 py-2 font-bold text-slate-900">{emp.name}</td>
+                          <td className="border border-slate-300 px-3 py-2 text-slate-700">{emp.position}</td>
+                          <td className="border border-slate-300 px-3 py-2 text-center font-bold text-emerald-700">{emp.hadir}</td>
+                          <td className="border border-slate-300 px-3 py-2 text-center font-bold text-blue-700">{emp.izin}</td>
+                          <td className="border border-slate-300 px-3 py-2 text-center font-bold text-rose-700">{emp.sakit}</td>
+                          <td className="border border-slate-300 px-3 py-2 text-center font-bold text-violet-700">{emp.cuti}</td>
+                          <td className="border border-slate-300 px-3 py-2 text-center font-bold text-amber-700">{emp.telat}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-slate-100 border-t-2 border-slate-900 font-extrabold text-slate-900">
+                        <td colSpan={3} className="border border-slate-300 px-3 py-2.5 text-right uppercase">
+                          TOTAL
+                        </td>
+                        <td className="border border-slate-300 px-3 py-2.5 text-center text-emerald-800 font-extrabold">{totalSummary.hadir}</td>
+                        <td className="border border-slate-300 px-3 py-2.5 text-center text-blue-800 font-extrabold">{totalSummary.izin}</td>
+                        <td className="border border-slate-300 px-3 py-2.5 text-center text-rose-800 font-extrabold">{totalSummary.sakit}</td>
+                        <td className="border border-slate-300 px-3 py-2.5 text-center text-violet-800 font-extrabold">{totalSummary.cuti}</td>
+                        <td className="border border-slate-300 px-3 py-2.5 text-center text-amber-800 font-extrabold">{totalSummary.telat}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+
+                {/* PDF Signatures Block */}
+                <div className="pt-6 space-y-4">
+                  <p className="font-bold text-xs text-slate-800">Mengetahui,</p>
+                  <div className="flex justify-between items-start pt-2">
+                    {/* Manager Signature (Left) */}
+                    <div className="w-1/2 pr-4">
+                      <p className="font-bold text-xs leading-relaxed text-slate-900">
+                        Sidoarjo, {currentDateFormatted}<br />
+                        Manager
+                      </p>
+                      <div className="h-16"></div>
+                      <p className="font-extrabold text-xs underline text-slate-900">
+                        Rino Raihan G.
+                      </p>
+                    </div>
+
+                    {/* Ast Manager Signature (Right) */}
+                    <div className="w-1/2 pl-4">
+                      <p className="font-bold text-xs leading-relaxed text-slate-900">
+                        <br />
+                        Ast Manager
+                      </p>
+                      <div className="h-16"></div>
+                      <p className="font-extrabold text-xs underline text-slate-900">
+                        Aldan Nur Sajidan
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            {/* Modal Footer Actions */}
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200 bg-white">
+              <Button
+                variant="outline"
+                onClick={() => setShowPdfModal(false)}
+                className="px-5 rounded-xl cursor-pointer"
+              >
+                Tutup
+              </Button>
+              <Button
+                onClick={handlePrintPDF}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 rounded-xl flex items-center gap-2 cursor-pointer shadow-sm"
+              >
+                <Printer className="w-4 h-4" />
+                Cetak / Download PDF
+              </Button>
+            </div>
+
           </div>
         </div>
       )}
