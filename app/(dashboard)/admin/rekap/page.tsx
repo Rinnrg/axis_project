@@ -319,7 +319,7 @@ export default function RekapPage() {
         <style>
           @page {
             size: A4 portrait;
-            margin: 15mm;
+            margin: 12mm;
           }
           * {
             box-sizing: border-box;
@@ -330,57 +330,85 @@ export default function RekapPage() {
             color: #000000;
             margin: 0;
             padding: 10px;
-            font-size: 12px;
+            font-size: 11px;
             background: #ffffff;
+            position: relative;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .bg-watermark {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            opacity: 0.05;
+            background-image: url('/axis.svg');
+            background-repeat: repeat;
+            background-size: 120px 120px;
+            background-position: center;
           }
           .header {
             text-align: center;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
             border-bottom: 2px solid #000000;
             padding-bottom: 12px;
           }
           .header h1 {
             margin: 0;
             font-size: 18px;
-            font-weight: bold;
+            font-weight: 800;
             text-transform: uppercase;
             letter-spacing: 1px;
             color: #000000;
           }
           .header h2 {
-            margin: 4px 0 0 0;
-            font-size: 14px;
-            font-weight: normal;
+            margin: 4px 0 2px 0;
+            font-size: 15px;
+            font-weight: bold;
             color: #000000;
+            letter-spacing: 0.5px;
           }
-          .header p {
-            margin: 6px 0 0 0;
-            font-size: 12px;
-            color: #000000;
+          .header .sub-text {
+            margin: 0;
+            font-size: 10px;
+            color: #333333;
+            font-style: italic;
+          }
+          .meta-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+            padding-top: 6px;
+            border-top: 1px dashed #000000;
+            font-size: 11px;
             font-weight: bold;
           }
           table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 10px;
+            margin-top: 12px;
           }
           th, td {
             border: 1px solid #000000;
-            padding: 8px 10px;
+            padding: 7px 9px;
             text-align: left;
             color: #000000;
           }
           th {
-            background-color: #f2f2f2;
+            background-color: #f2f2f2 !important;
             font-weight: bold;
-            font-size: 11px;
+            font-size: 10.5px;
             text-transform: uppercase;
             color: #000000;
           }
           tfoot tr td {
-            background-color: #f2f2f2;
+            background-color: #f2f2f2 !important;
             font-weight: bold;
-            font-size: 12px;
+            font-size: 11px;
             border-top: 2px solid #000000;
             color: #000000;
           }
@@ -390,7 +418,7 @@ export default function RekapPage() {
           }
           .sig-header {
             font-weight: bold;
-            font-size: 12px;
+            font-size: 11px;
             margin-bottom: 15px;
             color: #000000;
           }
@@ -405,16 +433,16 @@ export default function RekapPage() {
           }
           .sig-title {
             font-weight: bold;
-            font-size: 12px;
+            font-size: 11px;
             color: #000000;
             line-height: 1.5;
           }
           .sig-space {
-            height: 65px;
+            height: 60px;
           }
           .sig-name {
             font-weight: bold;
-            font-size: 13px;
+            font-size: 12px;
             text-decoration: underline;
             color: #000000;
           }
@@ -424,23 +452,29 @@ export default function RekapPage() {
         </style>
       </head>
       <body>
+        <div class="bg-watermark"></div>
+        
         <div class="header">
           <h1>LAPORAN REKAP PRESENSI KARYAWAN</h1>
-          <h2>PT. AXIS PROJECT</h2>
-          <p>Periode: ${getPeriodeText()}</p>
+          <h2>CH CLUB HOUSE</h2>
+          <p class="sub-text">Sistem Presensi & Manajemen Kehadiran Operational</p>
+          <div class="meta-info">
+            <span>Periode: ${getPeriodeText()}</span>
+            <span>Tanggal Cetak: ${currentDateStr}</span>
+          </div>
         </div>
 
         <table>
           <thead>
             <tr>
               <th style="width: 35px; text-align: center;">No</th>
-              <th>Nama</th>
+              <th>Nama Karyawan</th>
               <th>Jabatan</th>
-              <th style="width: 55px; text-align: center;">Hadir</th>
-              <th style="width: 55px; text-align: center;">Izin</th>
-              <th style="width: 55px; text-align: center;">Sakit</th>
-              <th style="width: 55px; text-align: center;">Cuti</th>
-              <th style="width: 130px; text-align: center;">Keterangan (Telat)</th>
+              <th style="width: 50px; text-align: center;">Hadir</th>
+              <th style="width: 50px; text-align: center;">Izin</th>
+              <th style="width: 50px; text-align: center;">Sakit</th>
+              <th style="width: 50px; text-align: center;">Cuti</th>
+              <th style="width: 120px; text-align: center;">Keterangan (Telat)</th>
             </tr>
           </thead>
           <tbody>
@@ -448,7 +482,7 @@ export default function RekapPage() {
           </tbody>
           <tfoot>
             <tr>
-              <td colspan="3" style="text-align: right; padding-right: 15px;">TOTAL</td>
+              <td colspan="3" style="text-align: right; padding-right: 15px;">TOTAL KELURUHAN</td>
               <td style="text-align: center;">${totalSummary.hadir}</td>
               <td style="text-align: center;">${totalSummary.izin}</td>
               <td style="text-align: center;">${totalSummary.sakit}</td>
@@ -1281,95 +1315,110 @@ export default function RekapPage() {
 
             {/* Document Paper Preview */}
             <div className="p-6 md:p-10 overflow-y-auto flex-1 bg-slate-200/60">
-              <div className="bg-white p-8 md:p-12 shadow-md rounded-lg max-w-3xl mx-auto border border-slate-300 font-sans text-slate-900 text-sm space-y-6">
+              <div className="bg-white p-8 md:p-12 shadow-md rounded-lg max-w-3xl mx-auto border border-slate-300 font-sans text-slate-900 text-sm space-y-6 relative overflow-hidden">
                 
-                {/* PDF Title Header */}
-                <div className="text-center border-b-2 border-black pb-4">
-                  <h1 className="text-xl md:text-2xl font-bold uppercase tracking-wider text-black">
-                    LAPORAN REKAP PRESENSI KARYAWAN
-                  </h1>
-                  <h2 className="text-sm font-semibold text-black mt-1">
-                    PT. AXIS PROJECT
-                  </h2>
-                  <p className="text-xs font-bold text-black mt-2">
-                    Periode: {getPeriodeText()}
-                  </p>
-                </div>
+                {/* Background Pattern Watermark */}
+                <div 
+                  className="absolute inset-0 pointer-events-none opacity-[0.05] bg-repeat bg-center z-0"
+                  style={{
+                    backgroundImage: "url('/axis.svg')",
+                    backgroundSize: "120px 120px"
+                  }}
+                />
 
-                {/* PDF Rekap Table */}
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse border border-black text-xs text-black">
-                    <thead>
-                      <tr className="bg-slate-100 border-b border-black text-black">
-                        <th className="border border-black px-3 py-2 text-center w-10">No</th>
-                        <th className="border border-black px-3 py-2 text-left">Nama</th>
-                        <th className="border border-black px-3 py-2 text-left">Jabatan</th>
-                        <th className="border border-black px-3 py-2 text-center w-14">Hadir</th>
-                        <th className="border border-black px-3 py-2 text-center w-14">Izin</th>
-                        <th className="border border-black px-3 py-2 text-center w-14">Sakit</th>
-                        <th className="border border-black px-3 py-2 text-center w-14">Cuti</th>
-                        <th className="border border-black px-3 py-2 text-center w-28">Keterangan (Telat)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {employeeRekapList.map((emp, idx) => (
-                        <tr key={emp.id} className="border-b border-black">
-                          <td className="border border-black px-3 py-2 text-center font-semibold text-black">{idx + 1}</td>
-                          <td className="border border-black px-3 py-2 font-bold text-black">{emp.name}</td>
-                          <td className="border border-black px-3 py-2 text-black">{emp.position}</td>
-                          <td className="border border-black px-3 py-2 text-center font-bold text-black">{emp.hadir}</td>
-                          <td className="border border-black px-3 py-2 text-center font-bold text-black">{emp.izin}</td>
-                          <td className="border border-black px-3 py-2 text-center font-bold text-black">{emp.sakit}</td>
-                          <td className="border border-black px-3 py-2 text-center font-bold text-black">{emp.cuti}</td>
-                          <td className="border border-black px-3 py-2 text-center font-bold text-black">{emp.telat}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot>
-                      <tr className="bg-slate-100 border-t-2 border-black font-bold text-black">
-                        <td colSpan={3} className="border border-black px-3 py-2.5 text-right uppercase">
-                          TOTAL
-                        </td>
-                        <td className="border border-black px-3 py-2.5 text-center font-bold text-black">{totalSummary.hadir}</td>
-                        <td className="border border-black px-3 py-2.5 text-center font-bold text-black">{totalSummary.izin}</td>
-                        <td className="border border-black px-3 py-2.5 text-center font-bold text-black">{totalSummary.sakit}</td>
-                        <td className="border border-black px-3 py-2.5 text-center font-bold text-black">{totalSummary.cuti}</td>
-                        <td className="border border-black px-3 py-2.5 text-center font-bold text-black">{totalSummary.telat}</td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-
-                {/* PDF Signatures Block */}
-                <div className="pt-6 space-y-4">
-                  <p className="font-bold text-xs text-black">Mengetahui,</p>
-                  <div className="flex justify-between items-start pt-2">
-                    {/* Manager Signature (Left) */}
-                    <div className="w-1/2 pr-4">
-                      <p className="font-bold text-xs leading-relaxed text-black">
-                        Sidoarjo, {currentDateFormatted}<br />
-                        Manager
-                      </p>
-                      <div className="h-16"></div>
-                      <p className="font-bold text-xs underline text-black">
-                        Rino Raihan G.
-                      </p>
-                    </div>
-
-                    {/* Ast Manager Signature (Right) */}
-                    <div className="w-1/2 pl-4">
-                      <p className="font-bold text-xs leading-relaxed text-black">
-                        <br />
-                        Ast Manager
-                      </p>
-                      <div className="h-16"></div>
-                      <p className="font-bold text-xs underline text-black">
-                        Aldan Nur Sajidan
-                      </p>
+                <div className="relative z-10 space-y-6">
+                  {/* PDF Title Header */}
+                  <div className="text-center border-b-2 border-black pb-4">
+                    <h1 className="text-xl md:text-2xl font-extrabold uppercase tracking-wider text-black">
+                      LAPORAN REKAP PRESENSI KARYAWAN
+                    </h1>
+                    <h2 className="text-base font-bold text-black mt-1 tracking-wide">
+                      CH CLUB HOUSE
+                    </h2>
+                    <p className="text-[11px] text-slate-700 italic mt-0.5">
+                      Sistem Presensi & Manajemen Kehadiran Operational
+                    </p>
+                    <div className="flex items-center justify-between mt-3 pt-2 border-t border-dashed border-black text-xs font-bold text-black">
+                      <span>Periode: <strong>{getPeriodeText()}</strong></span>
+                      <span>Tanggal Cetak: <strong>{currentDateFormatted}</strong></span>
                     </div>
                   </div>
-                </div>
 
+                  {/* PDF Rekap Table */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse border border-black text-xs text-black">
+                      <thead>
+                        <tr className="bg-slate-100 border-b border-black text-black">
+                          <th className="border border-black px-3 py-2 text-center w-10">No</th>
+                          <th className="border border-black px-3 py-2 text-left">Nama Karyawan</th>
+                          <th className="border border-black px-3 py-2 text-left">Jabatan</th>
+                          <th className="border border-black px-3 py-2 text-center w-14">Hadir</th>
+                          <th className="border border-black px-3 py-2 text-center w-14">Izin</th>
+                          <th className="border border-black px-3 py-2 text-center w-14">Sakit</th>
+                          <th className="border border-black px-3 py-2 text-center w-14">Cuti</th>
+                          <th className="border border-black px-3 py-2 text-center w-28">Keterangan (Telat)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {employeeRekapList.map((emp, idx) => (
+                          <tr key={emp.id} className="border-b border-black">
+                            <td className="border border-black px-3 py-2 text-center font-semibold text-black">{idx + 1}</td>
+                            <td className="border border-black px-3 py-2 font-bold text-black">{emp.name}</td>
+                            <td className="border border-black px-3 py-2 text-black">{emp.position}</td>
+                            <td className="border border-black px-3 py-2 text-center font-bold text-black">{emp.hadir}</td>
+                            <td className="border border-black px-3 py-2 text-center font-bold text-black">{emp.izin}</td>
+                            <td className="border border-black px-3 py-2 text-center font-bold text-black">{emp.sakit}</td>
+                            <td className="border border-black px-3 py-2 text-center font-bold text-black">{emp.cuti}</td>
+                            <td className="border border-black px-3 py-2 text-center font-bold text-black">{emp.telat}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr className="bg-slate-100 border-t-2 border-black font-bold text-black">
+                          <td colSpan={3} className="border border-black px-3 py-2.5 text-right uppercase">
+                            TOTAL KELURUHAN
+                          </td>
+                          <td className="border border-black px-3 py-2.5 text-center font-bold text-black">{totalSummary.hadir}</td>
+                          <td className="border border-black px-3 py-2.5 text-center font-bold text-black">{totalSummary.izin}</td>
+                          <td className="border border-black px-3 py-2.5 text-center font-bold text-black">{totalSummary.sakit}</td>
+                          <td className="border border-black px-3 py-2.5 text-center font-bold text-black">{totalSummary.cuti}</td>
+                          <td className="border border-black px-3 py-2.5 text-center font-bold text-black">{totalSummary.telat}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+
+                  {/* PDF Signatures Block */}
+                  <div className="pt-6 space-y-4">
+                    <p className="font-bold text-xs text-black">Mengetahui,</p>
+                    <div className="flex justify-between items-start pt-2">
+                      {/* Manager Signature (Left) */}
+                      <div className="w-1/2 pr-4">
+                        <p className="font-bold text-xs leading-relaxed text-black">
+                          Sidoarjo, {currentDateFormatted}<br />
+                          Manager
+                        </p>
+                        <div className="h-16"></div>
+                        <p className="font-bold text-xs underline text-black">
+                          Rino Raihan G.
+                        </p>
+                      </div>
+
+                      {/* Ast Manager Signature (Right) */}
+                      <div className="w-1/2 pl-4">
+                        <p className="font-bold text-xs leading-relaxed text-black">
+                          <br />
+                          Ast Manager
+                        </p>
+                        <div className="h-16"></div>
+                        <p className="font-bold text-xs underline text-black">
+                          Aldan Nur Sajidan
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
               </div>
             </div>
 
