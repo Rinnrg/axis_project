@@ -270,25 +270,25 @@ export default function PublicReportPage() {
         <div className="bg-slate-800/80 p-1.5 rounded-2xl border border-slate-700/60 grid grid-cols-2 gap-2 shadow-lg">
           <button
             onClick={() => setActiveTab('create')}
-            className={`flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer ${
+            className={`flex items-center justify-center gap-1.5 py-3 px-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
               activeTab === 'create'
                 ? 'bg-indigo-600 text-white shadow-md'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
             }`}
           >
-            <PlusCircle className="w-4 h-4" />
-            Buat Laporan Baru
+            <PlusCircle className="w-4 h-4 shrink-0" />
+            <span>Buat Laporan Baru</span>
           </button>
           <button
             onClick={() => setActiveTab('history')}
-            className={`flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer ${
+            className={`flex items-center justify-center gap-1.5 py-3 px-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
               activeTab === 'history'
                 ? 'bg-indigo-600 text-white shadow-md'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
             }`}
           >
-            <History className="w-4 h-4" />
-            Riwayat Laporan
+            <History className="w-4 h-4 shrink-0" />
+            <span>Riwayat Laporan</span>
           </button>
         </div>
 

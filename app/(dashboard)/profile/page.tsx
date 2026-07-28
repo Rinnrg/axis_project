@@ -131,7 +131,7 @@ export default function ProfilePage() {
               </div>
             )}
 
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Name Input */}
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-slate-700">Nama Lengkap</label>
@@ -205,7 +205,7 @@ export default function ProfilePage() {
         ) : (
           /* View Mode Grid */
           <div className="space-y-6">
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {profileItems.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -226,7 +226,7 @@ export default function ProfilePage() {
             {/* Employment Info */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
               <h3 className="text-lg font-semibold text-slate-900 border-b border-slate-100 pb-3">Informasi Kerja</h3>
-              <div className="grid md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="p-4 bg-slate-50 rounded-xl">
                   <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">ID Karyawan</p>
                   <p className="text-lg font-bold text-slate-950">#{user?.id}</p>

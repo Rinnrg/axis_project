@@ -43,8 +43,8 @@ function NavButton({ isActive, toggleMenu }: { isActive: boolean; toggleMenu: ()
 // Animation Variants from navigation-menu-01 motion/index.ts
 const menuVariant = {
   open: {
-    width: 'min(320px, calc(100vw - 32px))',
-    height: '440px',
+    width: 'min(340px, calc(100vw - 24px))',
+    height: 'min(500px, calc(100vh - 32px))',
     top: '-10px',
     right: '-10px',
     transition: { duration: 0.75, type: 'tween', ease: [0.76, 0, 0.24, 1] },
@@ -291,7 +291,7 @@ export function Topbar() {
                             <Link
                               onClick={() => setMenuOpen(false)}
                               href={link.href}
-                              className={`text-white text-[32px] sm:text-[36px] font-bold leading-tight hover:opacity-80 transition-opacity block ${
+                              className={`text-white text-[24px] sm:text-[28px] font-bold leading-tight hover:opacity-80 transition-opacity block ${
                                 isActive(link.href) ? 'underline underline-offset-4 decoration-2 decoration-white' : ''
                               }`}
                             >

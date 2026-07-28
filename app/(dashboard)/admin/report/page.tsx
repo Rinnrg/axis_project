@@ -315,26 +315,26 @@ export default function AdminReportPage() {
             />
           </div>
 
-          <div className="flex flex-wrap gap-3 w-full md:w-auto items-center justify-end">
+          <div className="flex flex-wrap gap-3 w-full md:w-auto items-center justify-start sm:justify-end">
             {/* Sender Type Selector */}
-            <div className="flex items-center bg-slate-100 p-1 rounded-xl">
+            <div className="flex items-center bg-slate-100 p-1 rounded-xl w-full sm:w-auto justify-between sm:justify-start overflow-x-auto">
               <button
                 onClick={() => setTypeFilter('ALL')}
-                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${typeFilter === 'ALL' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${typeFilter === 'ALL' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
                   }`}
               >
                 Semua Tipe
               </button>
               <button
                 onClick={() => setTypeFilter('PUBLIC')}
-                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${typeFilter === 'PUBLIC' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${typeFilter === 'PUBLIC' ? 'bg-purple-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
                   }`}
               >
                 Pelanggan
               </button>
               <button
                 onClick={() => setTypeFilter('INTERNAL')}
-                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${typeFilter === 'INTERNAL' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${typeFilter === 'INTERNAL' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
                   }`}
               >
                 Karyawan
@@ -342,7 +342,7 @@ export default function AdminReportPage() {
             </div>
 
             {/* Status Filter Tabs */}
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1 w-full sm:w-auto">
               {['ALL', 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'].map((st) => (
                 <button
                   key={st}

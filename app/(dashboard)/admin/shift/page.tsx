@@ -162,7 +162,7 @@ export default function AdminShiftPage() {
               </div>
 
               {/* Time Inputs */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
                     Jam Check-In (Masuk)
@@ -238,7 +238,7 @@ export default function AdminShiftPage() {
               </div>
 
               {/* Time Inputs */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
                     Jam Check-In (Masuk)

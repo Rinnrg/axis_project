@@ -936,10 +936,10 @@ export default function RekapPage() {
 
         {/* View Switcher Tabs */}
         <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap w-full">
             <button
               onClick={() => setActiveTab('rekap')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'rekap'
                   ? 'bg-slate-900 text-white shadow-sm'
                   : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
@@ -950,7 +950,7 @@ export default function RekapPage() {
             </button>
             <button
               onClick={() => setActiveTab('log')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'log'
                   ? 'bg-slate-900 text-white shadow-sm'
                   : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
@@ -967,7 +967,7 @@ export default function RekapPage() {
           <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-200">
             {!loading && employeeRekapList.length > 0 ? (
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full min-w-[650px]">
                   <thead className="bg-slate-50 border-b border-slate-200">
                     <tr>
                       <th className="px-5 py-3.5 text-center text-xs font-bold text-slate-700 uppercase tracking-wider w-12">No</th>
@@ -1061,7 +1061,7 @@ export default function RekapPage() {
           <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-200">
             {!loading && flatRecords.length > 0 ? (
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full min-w-[850px]">
                   <thead className="bg-slate-50 border-b border-slate-200">
                     <tr>
                       <th className="px-5 py-3.5 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">No</th>
