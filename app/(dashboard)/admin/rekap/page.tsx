@@ -501,7 +501,7 @@ export default function RekapPage() {
                 Manager
               </div>
               <div class="sig-space"></div>
-              <div class="sig-name">Rino Raihan G.</div>
+              <div class="sig-name">Hengki Tri Darmono S.T</div>
             </div>
             <div class="sig-box">
               <div class="sig-title">
@@ -509,7 +509,7 @@ export default function RekapPage() {
                 Ast Manager
               </div>
               <div class="sig-space"></div>
-              <div class="sig-name">Aldan Nur Sajidan</div>
+              <div class="sig-name">Aldannur Surya Hulaidar</div>
             </div>
           </div>
         </div>
@@ -1400,7 +1400,7 @@ export default function RekapPage() {
                         </p>
                         <div className="h-16"></div>
                         <p className="font-bold text-xs underline text-black">
-                          Rino Raihan G.
+                          Hengki Tri Darmono S.T
                         </p>
                       </div>
 
@@ -1412,7 +1412,7 @@ export default function RekapPage() {
                         </p>
                         <div className="h-16"></div>
                         <p className="font-bold text-xs underline text-black">
-                          Aldan Nur Sajidan
+                          Aldannur Surya Hulaidar
                         </p>
                       </div>
                     </div>
