@@ -454,10 +454,10 @@ export default function RekapPage() {
             height: 100%;
             pointer-events: none;
             z-index: -1;
-            opacity: 0.05;
+            opacity: 0.03;
             background-image: url('/axis.svg');
             background-repeat: repeat;
-            background-size: 120px 120px;
+            background-size: 260px 260px;
             background-position: center;
           }
           .header {
@@ -566,7 +566,7 @@ export default function RekapPage() {
         
         <div class="header">
           <h1>LAPORAN REKAP PRESENSI KARYAWAN</h1>
-          <h2>CH CLUB HOUSE</h2>
+          <h2>CH ALAM JUANDA</h2>
           <p class="sub-text">Sistem Presensi & Manajemen Kehadiran Operational</p>
           <div class="meta-info">
             <span>Periode: ${getPeriodeText()}</span>
@@ -592,7 +592,7 @@ export default function RekapPage() {
           </tbody>
           <tfoot>
             <tr>
-              <td colspan="3" style="text-align: right; padding-right: 15px;">TOTAL KELURUHAN</td>
+              <td colspan="3" style="text-align: right; padding-right: 15px;">TOTAL</td>
               <td style="text-align: center;">${totalSummary.hadir}</td>
               <td style="text-align: center;">${totalSummary.izin}</td>
               <td style="text-align: center;">${totalSummary.sakit}</td>
@@ -1429,10 +1429,10 @@ export default function RekapPage() {
                 
                 {/* Background Pattern Watermark */}
                 <div 
-                  className="absolute inset-0 pointer-events-none opacity-[0.05] bg-repeat bg-center z-0"
+                  className="absolute inset-0 pointer-events-none opacity-[0.03] bg-repeat bg-center z-0"
                   style={{
                     backgroundImage: "url('/axis.svg')",
-                    backgroundSize: "120px 120px"
+                    backgroundSize: "260px 260px"
                   }}
                 />
 
@@ -1443,7 +1443,7 @@ export default function RekapPage() {
                       LAPORAN REKAP PRESENSI KARYAWAN
                     </h1>
                     <h2 className="text-base font-bold text-black mt-1 tracking-wide">
-                      CH CLUB HOUSE
+                      CH ALAM JUANDA
                     </h2>
                     <p className="text-[11px] text-slate-700 italic mt-0.5">
                       Sistem Presensi & Manajemen Kehadiran Operational
@@ -1486,7 +1486,7 @@ export default function RekapPage() {
                       <tfoot>
                         <tr className="bg-slate-100 border-t-2 border-black font-bold text-black">
                           <td colSpan={3} className="border border-black px-3 py-2.5 text-right uppercase">
-                            TOTAL KELURUHAN
+                            TOTAL
                           </td>
                           <td className="border border-black px-3 py-2.5 text-center font-bold text-black">{totalSummary.hadir}</td>
                           <td className="border border-black px-3 py-2.5 text-center font-bold text-black">{totalSummary.izin}</td>
