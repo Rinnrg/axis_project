@@ -184,7 +184,7 @@ export default function RekapPage() {
     return 'Semua Data';
   };
 
-  // Excel export - Matrix format matching template
+  // Excel export - Matrix format utilizing public/format excel.xlsx template
   const downloadExcelMatrix = async () => {
     try {
       const XLSX = await import('xlsx');
@@ -210,21 +210,9 @@ export default function RekapPage() {
       const monthName = monthDate.toLocaleDateString('id-ID', { month: 'long' });
       const periodTitle = `Bulan ${monthName} ${yearNum}`;
 
-      // 1. Row 1 (Top Header)
-      const row1: any[] = ['No.', 'Nama'];
-      for (let d = 1; d <= numDays; d++) {
-        row1.push(d === 1 ? periodTitle : '');
-      }
-      row1.push('Keterangan', '', 'Ket. Format', '');
-
-      // 2. Row 2 (Sub-header Days)
-      const row2: any[] = ['', ''];
-      for (let d = 1; d <= numDays; d++) {
-        row2.push(d);
-      }
-      row2.push('', '', '✔', 'Hadir');
-
+      const targetEmployees = employeeRekapList.length > 0 ? employeeRekapList : employees;
       const legendRows = [
+        { symbol: '✔', label: 'Hadir' },
         { symbol: '✖', label: 'Tidak Hadir' },
         { symbol: '◆', label: 'Terlambat' },
         { symbol: '▲', label: 'Sakit' },
@@ -235,125 +223,236 @@ export default function RekapPage() {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      const targetEmployees = employeeRekapList.length > 0 ? employeeRekapList : employees;
-      const dataRows: any[][] = [];
+      // Attempt to load format excel.xlsx template from public folder
+      let templateWb: any = null;
+      try {
+        const tRes = await fetch('/format%20excel.xlsx');
+        if (tRes.ok) {
+          const ab = await tRes.arrayBuffer();
+          templateWb = XLSX.read(ab, { type: 'array', cellStyles: true });
+        }
+      } catch (e) {
+        console.log('Template fetch fallback to dynamic builder:', e);
+      }
 
-      targetEmployees.forEach((emp, empIdx) => {
-        const rowData: any[] = [empIdx + 1, emp.name];
+      if (templateWb && templateWb.SheetNames.length > 0) {
+        // --- TEMPLATE-BASED POPULATION ---
+        const wsName = templateWb.SheetNames[0];
+        const ws = templateWb.Sheets[wsName];
 
-        let hadirCount = 0;
-        let telatCount = 0;
-        let sakitCount = 0;
-        let alphaCount = 0;
+        // 1. Header Period Title in C1
+        if (ws['C1']) {
+          ws['C1'].v = periodTitle;
+          ws['C1'].w = periodTitle;
+        }
 
-        for (let d = 1; d <= numDays; d++) {
-          const currentDate = new Date(yearNum, monthNum - 1, d);
-          currentDate.setHours(0, 0, 0, 0);
-          const isSunday = currentDate.getDay() === 0;
+        // 2. Populate Employee Rows starting at row 3 (A3, B3, ...)
+        targetEmployees.forEach((emp, empIdx) => {
+          const rIndex = 3 + empIdx; // 1-indexed row in Excel (A3, A4, ...)
+          
+          // No. and Name
+          XLSX.utils.sheet_add_aoa(ws, [[empIdx + 1, emp.name]], { origin: `A${rIndex}` });
 
-          const pad = (n: number) => String(n).padStart(2, '0');
-          const dateStr = `${yearNum}-${pad(monthNum)}-${pad(d)}`;
+          let hadirCount = 0;
+          let telatCount = 0;
+          let sakitCount = 0;
+          let alphaCount = 0;
 
-          // Find record for this employee and date
-          const record = rekap.find((r) => {
-            const rEmpId = r.employeeId || r.userId;
-            return (rEmpId === emp.id || r.employeeName === emp.name) && r.date === dateStr;
-          });
+          // Daily status columns C to (C + numDays - 1)
+          const dailyValues: any[] = [];
+          for (let d = 1; d <= numDays; d++) {
+            const currentDate = new Date(yearNum, monthNum - 1, d);
+            currentDate.setHours(0, 0, 0, 0);
+            const isSunday = currentDate.getDay() === 0;
 
-          if (record) {
-            if (record.status === 'hadir') {
-              rowData.push('✔');
-              hadirCount++;
-            } else if (record.status === 'telat') {
-              rowData.push('◆');
-              telatCount++;
-            } else if (record.permissionType === 'SAKIT') {
-              rowData.push('▲');
-              sakitCount++;
-            } else if (record.status === 'izin' || record.permissionType) {
-              rowData.push('▲');
-              sakitCount++;
-            } else if (record.status === 'alpha') {
-              rowData.push('✖');
-              alphaCount++;
+            const pad = (n: number) => String(n).padStart(2, '0');
+            const dateStr = `${yearNum}-${pad(monthNum)}-${pad(d)}`;
+
+            const record = rekap.find((r) => {
+              const rEmpId = r.employeeId || r.userId;
+              return (rEmpId === emp.id || r.employeeName === emp.name) && r.date === dateStr;
+            });
+
+            if (record) {
+              if (record.status === 'hadir') {
+                dailyValues.push('✔');
+                hadirCount++;
+              } else if (record.status === 'telat') {
+                dailyValues.push('◆');
+                telatCount++;
+              } else if (record.permissionType === 'SAKIT') {
+                dailyValues.push('▲');
+                sakitCount++;
+              } else if (record.status === 'izin' || record.permissionType) {
+                dailyValues.push('▲');
+                sakitCount++;
+              } else if (record.status === 'alpha') {
+                dailyValues.push('✖');
+                alphaCount++;
+              } else {
+                dailyValues.push('✔');
+                hadirCount++;
+              }
             } else {
-              rowData.push('✔');
-              hadirCount++;
-            }
-          } else {
-            if (isSunday) {
-              rowData.push(liburLetters[empIdx % 5]);
-            } else if (currentDate > today) {
-              rowData.push('');
-            } else {
-              rowData.push('✖');
-              alphaCount++;
+              if (isSunday) {
+                dailyValues.push(liburLetters[empIdx % 5]);
+              } else if (currentDate > today) {
+                dailyValues.push('');
+              } else {
+                dailyValues.push('✖');
+                alphaCount++;
+              }
             }
           }
+
+          // Add daily values starting at Col C (Column index 2)
+          XLSX.utils.sheet_add_aoa(ws, [dailyValues], { origin: { r: rIndex - 1, c: 2 } });
+
+          // Keterangan summary column at (Col index 2 + numDays)
+          const summaryParts: string[] = [];
+          if (hadirCount > 0) summaryParts.push(`Hadir: ${hadirCount}`);
+          if (telatCount > 0) summaryParts.push(`Telat: ${telatCount}`);
+          if (sakitCount > 0) summaryParts.push(`Sakit/Izin: ${sakitCount}`);
+          if (alphaCount > 0) summaryParts.push(`Alpha: ${alphaCount}`);
+
+          const summaryText = summaryParts.join(', ') || '-';
+          XLSX.utils.sheet_add_aoa(ws, [[summaryText]], { origin: { r: rIndex - 1, c: 2 + numDays } });
+        });
+
+        // Update Sheet Reference Range (!ref)
+        const totalRows = Math.max(3 + targetEmployees.length, 7);
+        const lastColChar = XLSX.utils.encode_col(2 + numDays + 5);
+        ws['!ref'] = `A1:${lastColChar}${totalRows}`;
+
+        const filename = `Rekap_Presensi_${periodTitle.replace(/ /g, '_')}.xlsx`;
+        XLSX.writeFile(templateWb, filename);
+
+      } else {
+        // --- DYNAMIC FALLBACK BUILDER ---
+        const row1: any[] = ['No.', 'Nama'];
+        for (let d = 1; d <= numDays; d++) {
+          row1.push(d === 1 ? periodTitle : '');
         }
+        row1.push('Keterangan', '', 'Ket. Format', '');
 
-        // Keterangan summary column
-        const summaryParts: string[] = [];
-        if (hadirCount > 0) summaryParts.push(`Hadir: ${hadirCount}`);
-        if (telatCount > 0) summaryParts.push(`Telat: ${telatCount}`);
-        if (sakitCount > 0) summaryParts.push(`Sakit/Izin: ${sakitCount}`);
-        if (alphaCount > 0) summaryParts.push(`Alpha: ${alphaCount}`);
-
-        rowData.push(summaryParts.join(', ') || '-');
-        rowData.push(''); // Spacer
-
-        // Legend column (for rows 1 to 4)
-        if (empIdx < legendRows.length) {
-          rowData.push(legendRows[empIdx].symbol, legendRows[empIdx].label);
-        } else {
-          rowData.push('', '');
+        const row2: any[] = ['', ''];
+        for (let d = 1; d <= numDays; d++) {
+          row2.push(d);
         }
+        row2.push('', '', '✔', 'Hadir');
 
-        dataRows.push(rowData);
-      });
+        const fallbackLegend = [
+          { symbol: '✖', label: 'Tidak Hadir' },
+          { symbol: '◆', label: 'Terlambat' },
+          { symbol: '▲', label: 'Sakit' },
+          { symbol: '!', label: 'Tanpa Keterangan' },
+        ];
 
-      // Pad extra legend rows if employees count < legendRows count
-      if (targetEmployees.length < legendRows.length) {
-        for (let i = targetEmployees.length; i < legendRows.length; i++) {
-          const padRow = Array(2 + numDays + 2).fill('');
-          padRow.push(legendRows[i].symbol, legendRows[i].label);
-          dataRows.push(padRow);
+        const dataRows: any[][] = [];
+
+        targetEmployees.forEach((emp, empIdx) => {
+          const rowData: any[] = [empIdx + 1, emp.name];
+
+          let hadirCount = 0;
+          let telatCount = 0;
+          let sakitCount = 0;
+          let alphaCount = 0;
+
+          for (let d = 1; d <= numDays; d++) {
+            const currentDate = new Date(yearNum, monthNum - 1, d);
+            currentDate.setHours(0, 0, 0, 0);
+            const isSunday = currentDate.getDay() === 0;
+
+            const pad = (n: number) => String(n).padStart(2, '0');
+            const dateStr = `${yearNum}-${pad(monthNum)}-${pad(d)}`;
+
+            const record = rekap.find((r) => {
+              const rEmpId = r.employeeId || r.userId;
+              return (rEmpId === emp.id || r.employeeName === emp.name) && r.date === dateStr;
+            });
+
+            if (record) {
+              if (record.status === 'hadir') {
+                rowData.push('✔');
+                hadirCount++;
+              } else if (record.status === 'telat') {
+                rowData.push('◆');
+                telatCount++;
+              } else if (record.permissionType === 'SAKIT') {
+                rowData.push('▲');
+                sakitCount++;
+              } else if (record.status === 'izin' || record.permissionType) {
+                rowData.push('▲');
+                sakitCount++;
+              } else if (record.status === 'alpha') {
+                rowData.push('✖');
+                alphaCount++;
+              } else {
+                rowData.push('✔');
+                hadirCount++;
+              }
+            } else {
+              if (isSunday) {
+                rowData.push(liburLetters[empIdx % 5]);
+              } else if (currentDate > today) {
+                rowData.push('');
+              } else {
+                rowData.push('✖');
+                alphaCount++;
+              }
+            }
+          }
+
+          const summaryParts: string[] = [];
+          if (hadirCount > 0) summaryParts.push(`Hadir: ${hadirCount}`);
+          if (telatCount > 0) summaryParts.push(`Telat: ${telatCount}`);
+          if (sakitCount > 0) summaryParts.push(`Sakit/Izin: ${sakitCount}`);
+          if (alphaCount > 0) summaryParts.push(`Alpha: ${alphaCount}`);
+
+          rowData.push(summaryParts.join(', ') || '-');
+          rowData.push(''); // Spacer
+
+          if (empIdx < fallbackLegend.length) {
+            rowData.push(fallbackLegend[empIdx].symbol, fallbackLegend[empIdx].label);
+          } else {
+            rowData.push('', '');
+          }
+
+          dataRows.push(rowData);
+        });
+
+        const aoa = [row1, row2, ...dataRows];
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+        ws['!merges'] = [
+          { s: { r: 0, c: 0 }, e: { r: 1, c: 0 } },
+          { s: { r: 0, c: 1 }, e: { r: 1, c: 1 } },
+          { s: { r: 0, c: 2 }, e: { r: 0, c: 1 + numDays } },
+          { s: { r: 0, c: 2 + numDays }, e: { r: 1, c: 2 + numDays } },
+          { s: { r: 0, c: 4 + numDays }, e: { r: 0, c: 5 + numDays } },
+        ];
+
+        const cols: any[] = [{ wch: 5 }, { wch: 28 }];
+        for (let d = 1; d <= numDays; d++) {
+          cols.push({ wch: 4 });
         }
+        cols.push({ wch: 28 });
+        cols.push({ wch: 3 });
+        cols.push({ wch: 6 });
+        cols.push({ wch: 20 });
+
+        ws['!cols'] = cols;
+
+        const wb = XLSX.utils.book_new();
+        const filename = `Rekap_Presensi_${periodTitle.replace(/ /g, '_')}.xlsx`;
+        XLSX.utils.book_append_sheet(wb, ws, 'Rekap Presensi');
+        XLSX.writeFile(wb, filename);
       }
-
-      const aoa = [row1, row2, ...dataRows];
-      const ws = XLSX.utils.aoa_to_sheet(aoa);
-
-      // Set Merges
-      ws['!merges'] = [
-        { s: { r: 0, c: 0 }, e: { r: 1, c: 0 } }, // No.
-        { s: { r: 0, c: 1 }, e: { r: 1, c: 1 } }, // Nama
-        { s: { r: 0, c: 2 }, e: { r: 0, c: 1 + numDays } }, // Period Header (Bulan...)
-        { s: { r: 0, c: 2 + numDays }, e: { r: 1, c: 2 + numDays } }, // Keterangan
-        { s: { r: 0, c: 4 + numDays }, e: { r: 0, c: 5 + numDays } }, // Ket. Format
-      ];
-
-      // Set Column Widths
-      const cols: any[] = [{ wch: 5 }, { wch: 28 }];
-      for (let d = 1; d <= numDays; d++) {
-        cols.push({ wch: 4 });
-      }
-      cols.push({ wch: 28 }); // Keterangan
-      cols.push({ wch: 3 });  // Spacer
-      cols.push({ wch: 6 });  // Legend Symbol
-      cols.push({ wch: 20 }); // Legend Label
-
-      ws['!cols'] = cols;
-
-      const wb = XLSX.utils.book_new();
-      const filename = `Rekap_Presensi_${periodTitle.replace(/ /g, '_')}.xlsx`;
-      XLSX.utils.book_append_sheet(wb, ws, 'Rekap Presensi');
-      XLSX.writeFile(wb, filename);
 
       Swal.fire({
         icon: 'success',
         title: 'Export Excel Berhasil!',
-        text: `File ${filename} telah berhasil diunduh dengan format matriks baru.`,
+        text: `File Rekap Presensi telah berhasil diunduh menggunakan format template terbaru.`,
         timer: 2200,
         showConfirmButton: false,
         customClass: { popup: 'rounded-2xl' },
